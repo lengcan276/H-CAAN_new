@@ -1,0 +1,17 @@
+
+Bad key "text.kerning_factor" on line 4 in
+/home/nudt_cleng/anaconda3/lib/python3.7/site-packages/matplotlib/mpl-data/stylelib/_classic_test_patch.mplstyle.
+You probably need to get an updated matplotlibrc file from
+https://github.com/matplotlib/matplotlib/blob/v3.1.3/matplotlibrc.template
+or from the matplotlib source distribution
+Using device: cuda:0
+Loading data...
+Pre-processed data /home/nudt_cleng/ccleng/MMFDL-main/notebook/0423/results/processed/results/processed/processed/Lipophilicity_MFBERT_dataTrain.pt not found, doing pre-processing...
+Traceback (most recent call last):
+  File "new_2.py", line 412, in <module>
+    train_data = formDataset(root='/home/nudt_cleng/ccleng/MMFDL-main/notebook/0423/results/processed/results/processed', dataset='Lipophilicity_MFBERT_dataTrain')
+  File "../../util/utils_MFBERT.py", line 22, in __init__
+    self.process(encodedSmi, ecfp, y, smile_graph)
+  File "../../util/utils_MFBERT.py", line 34, in process
+    assert (len(encodedSmi) == len(ecfp) and len(ecfp) == len(log)), "The three lists must be the same length!"
+TypeError: object of type 'NoneType' has no len()

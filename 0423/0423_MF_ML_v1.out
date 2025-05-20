@@ -1,0 +1,1702 @@
+Using device: cuda:0
+Loading data...
+Pre-processed data found: results/processed/processed/Lipophilicity_MFBERT_dataTrain.pt, loading ...
+Pre-processed data found: results/processed/processed/Lipophilicity_MFBERT_dataTest.pt, loading ...
+Initializing model...
+Starting training...
+
+Epoch 1/50
+Warmup learning rate: 0.000000
+Batch 0, Current loss: 0.5104
+Batch 10, Current loss: 0.5357
+Warning: NaN gradients fixed at batch 17
+Batch 20, Current loss: 0.5562
+Batch 30, Current loss: 0.5309
+Batch 40, Current loss: 0.5961
+Batch 50, Current loss: 0.5784
+Batch 60, Current loss: 0.5714
+Batch 70, Current loss: 0.5771
+Warning: NaN gradients fixed at batch 71
+Batch 80, Current loss: 0.5670
+Batch 90, Current loss: 0.5235
+Batch 100, Current loss: 0.5332
+Warning: NaN gradients fixed at batch 110
+Batch 110, Current loss: 0.5278
+Batch 120, Current loss: 0.5765
+Batch 130, Current loss: 0.5864
+Batch 140, Current loss: 0.5057
+Warning: NaN gradients fixed at batch 142
+Batch 150, Current loss: 0.5832
+Warning: NaN gradients fixed at batch 157
+Batch 160, Current loss: 0.5339
+Warning: NaN gradients fixed at batch 168
+Batch 170, Current loss: 0.5799
+Warning: NaN gradients fixed at batch 174
+Train avg_loss: 0.5548
+Validation avg_loss: 2.1953
+Saved new best model
+Epoch time: 43.91 seconds
+
+Epoch 2/50
+Warmup learning rate: 0.000002
+Batch 0, Current loss: 0.5691
+Warning: NaN gradients fixed at batch 10
+Batch 10, Current loss: 0.5454
+Batch 20, Current loss: 0.5928
+Batch 30, Current loss: 0.5576
+Batch 40, Current loss: 0.5810
+Warning: NaN gradients fixed at batch 46
+Batch 50, Current loss: 0.5923
+Batch 60, Current loss: 0.5839
+Batch 70, Current loss: 0.5787
+Warning: NaN gradients fixed at batch 76
+Batch 80, Current loss: 0.5508
+Warning: NaN gradients fixed at batch 82
+Warning: NaN gradients fixed at batch 83
+Batch 90, Current loss: 0.5566
+Batch 100, Current loss: 0.5635
+Batch 110, Current loss: 0.5978
+Warning: NaN gradients fixed at batch 115
+Batch 120, Current loss: 0.5629
+Batch 130, Current loss: 0.5479
+Batch 140, Current loss: 0.5202
+Batch 150, Current loss: 0.5322
+Warning: NaN gradients fixed at batch 154
+Batch 160, Current loss: 0.5415
+Batch 170, Current loss: 0.5209
+Train avg_loss: 0.5694
+Validation avg_loss: 1.8761
+Saved new best model
+Epoch time: 43.84 seconds
+
+Epoch 3/50
+Warmup learning rate: 0.000004
+Batch 0, Current loss: 0.5698
+Batch 10, Current loss: 0.5557
+Batch 20, Current loss: 0.5068
+Batch 30, Current loss: 0.5192
+Warning: NaN gradients fixed at batch 36
+Batch 40, Current loss: 0.5382
+Batch 50, Current loss: 0.5321
+Warning: NaN gradients fixed at batch 60
+Batch 60, Current loss: 0.6319
+Batch 70, Current loss: 0.5392
+Batch 80, Current loss: 0.5419
+Warning: NaN gradients fixed at batch 90
+Batch 90, Current loss: 0.5853
+Warning: NaN gradients fixed at batch 93
+Warning: NaN gradients fixed at batch 100
+Batch 100, Current loss: 0.5593
+Warning: NaN gradients fixed at batch 110
+Batch 110, Current loss: 0.5606
+Batch 120, Current loss: 0.5234
+Batch 130, Current loss: 0.5819
+Warning: NaN gradients fixed at batch 137
+Batch 140, Current loss: 0.5461
+Batch 150, Current loss: 0.5219
+Batch 160, Current loss: 0.5492
+Batch 170, Current loss: 0.5404
+Train avg_loss: 0.5467
+Validation avg_loss: 1.8995
+Epoch time: 43.29 seconds
+
+Epoch 4/50
+Warmup learning rate: 0.000006
+Batch 0, Current loss: 0.5489
+Warning: NaN gradients fixed at batch 3
+Batch 10, Current loss: 0.5265
+Warning: NaN gradients fixed at batch 16
+Batch 20, Current loss: 0.5445
+Batch 30, Current loss: 0.5537
+Batch 40, Current loss: 0.5218
+Batch 50, Current loss: 0.5434
+Batch 60, Current loss: 0.5517
+Warning: NaN gradients fixed at batch 66
+Batch 70, Current loss: 0.4981
+Batch 80, Current loss: 0.5186
+Warning: NaN gradients fixed at batch 81
+Warning: NaN gradients fixed at batch 87
+Batch 90, Current loss: 0.5386
+Warning: NaN gradients fixed at batch 92
+Batch 100, Current loss: 0.4513
+Batch 110, Current loss: 0.5147
+Batch 120, Current loss: 0.5040
+Warning: NaN gradients fixed at batch 123
+Batch 130, Current loss: 0.3968
+Batch 140, Current loss: 0.5126
+Batch 150, Current loss: 0.4403
+Batch 160, Current loss: 0.4742
+Batch 170, Current loss: 0.4933
+Train avg_loss: 0.5043
+Validation avg_loss: 2.0736
+Epoch time: 43.31 seconds
+
+Epoch 5/50
+Warmup learning rate: 0.000008
+Batch 0, Current loss: 0.5191
+Batch 10, Current loss: 0.4822
+Warning: NaN gradients fixed at batch 18
+Batch 20, Current loss: 0.5307
+Batch 30, Current loss: 0.5511
+Batch 40, Current loss: 0.5376
+Batch 50, Current loss: 0.5496
+Batch 60, Current loss: 0.5244
+Warning: NaN gradients fixed at batch 70
+Batch 70, Current loss: 0.5486
+Warning: NaN gradients fixed at batch 76
+Warning: NaN gradients fixed at batch 78
+Batch 80, Current loss: 0.5318
+Batch 90, Current loss: 0.5845
+Batch 100, Current loss: 0.5259
+Batch 110, Current loss: 0.5803
+Batch 120, Current loss: 0.5342
+Batch 130, Current loss: 0.5683
+Warning: NaN gradients fixed at batch 140
+Batch 140, Current loss: 0.5743
+Batch 150, Current loss: 0.5160
+Batch 160, Current loss: 0.4736
+Warning: NaN gradients fixed at batch 162
+Warning: NaN gradients fixed at batch 168
+Batch 170, Current loss: 0.5466
+Train avg_loss: 0.5374
+Validation avg_loss: 2.4365
+Epoch time: 43.32 seconds
+
+Epoch 6/50
+Batch 0, Current loss: 0.5677
+Warning: NaN gradients fixed at batch 5
+Batch 10, Current loss: 0.5550
+Warning: NaN gradients fixed at batch 11
+Batch 20, Current loss: 0.5099
+Warning: NaN gradients fixed at batch 22
+Batch 30, Current loss: 0.5058
+Batch 40, Current loss: 0.5271
+Batch 50, Current loss: 0.5007
+Warning: NaN gradients fixed at batch 57
+Batch 60, Current loss: 0.5237
+Batch 70, Current loss: 0.5209
+Warning: NaN gradients fixed at batch 71
+Batch 80, Current loss: 0.4982
+Batch 90, Current loss: 0.5147
+Warning: NaN gradients fixed at batch 93
+Batch 100, Current loss: 0.5130
+Warning: NaN gradients fixed at batch 105
+Batch 110, Current loss: 0.5258
+Batch 120, Current loss: 0.5197
+Batch 130, Current loss: 0.5310
+Batch 140, Current loss: 0.5225
+Batch 150, Current loss: 0.4752
+Batch 160, Current loss: 0.5401
+Batch 170, Current loss: 0.5119
+Train avg_loss: 0.5251
+Validation avg_loss: 1.8858
+Epoch time: 43.32 seconds
+
+Epoch 7/50
+Batch 0, Current loss: 0.5196
+Warning: NaN gradients fixed at batch 3
+Warning: NaN gradients fixed at batch 9
+Batch 10, Current loss: 0.5282
+Warning: NaN gradients fixed at batch 19
+Batch 20, Current loss: 0.5574
+Warning: NaN gradients fixed at batch 29
+Batch 30, Current loss: 0.5164
+Batch 40, Current loss: 0.5230
+Warning: NaN gradients fixed at batch 44
+Batch 50, Current loss: 0.5528
+Batch 60, Current loss: 0.4836
+Batch 70, Current loss: 0.5137
+Batch 80, Current loss: 0.5148
+Batch 90, Current loss: 0.4998
+Batch 100, Current loss: 0.5203
+Batch 110, Current loss: 0.5116
+Batch 120, Current loss: 0.5299
+Batch 130, Current loss: 0.4887
+Warning: NaN gradients fixed at batch 136
+Batch 140, Current loss: 0.5208
+Batch 150, Current loss: 0.5191
+Batch 160, Current loss: 0.5412
+Batch 170, Current loss: 0.4956
+Warning: NaN gradients fixed at batch 172
+Train avg_loss: 0.5191
+Validation avg_loss: 1.8906
+Epoch time: 43.31 seconds
+
+Epoch 8/50
+Batch 0, Current loss: 0.5660
+Batch 10, Current loss: 0.5482
+Batch 20, Current loss: 0.5089
+Batch 30, Current loss: 0.4902
+Warning: NaN gradients fixed at batch 34
+Batch 40, Current loss: 0.5303
+Warning: NaN gradients fixed at batch 44
+Batch 50, Current loss: 0.4838
+Batch 60, Current loss: 0.4948
+Batch 70, Current loss: 0.4768
+Batch 80, Current loss: 0.5026
+Warning: NaN gradients fixed at batch 84
+Batch 90, Current loss: 0.4807
+Warning: NaN gradients fixed at batch 92
+Batch 100, Current loss: 0.5141
+Warning: NaN gradients fixed at batch 105
+Batch 110, Current loss: 0.5193
+Batch 120, Current loss: 0.5055
+Batch 130, Current loss: 0.5426
+Batch 140, Current loss: 0.4884
+Batch 150, Current loss: 0.4932
+Batch 160, Current loss: 0.4978
+Warning: NaN gradients fixed at batch 161
+Batch 170, Current loss: 0.4962
+Warning: NaN gradients fixed at batch 177
+Train avg_loss: 0.5134
+Validation avg_loss: 1.6675
+Saved new best model
+Epoch time: 43.92 seconds
+
+Epoch 9/50
+Batch 0, Current loss: 0.5004
+Batch 10, Current loss: 0.5053
+Batch 20, Current loss: 0.4995
+Warning: NaN gradients fixed at batch 24
+Batch 30, Current loss: 0.5254
+Batch 40, Current loss: 0.5118
+Warning: NaN gradients fixed at batch 41
+Warning: NaN gradients fixed at batch 47
+Batch 50, Current loss: 0.5083
+Warning: NaN gradients fixed at batch 53
+Batch 60, Current loss: 0.5214
+Batch 70, Current loss: 0.5282
+Batch 80, Current loss: 0.5203
+Batch 90, Current loss: 0.5221
+Warning: NaN gradients fixed at batch 92
+Batch 100, Current loss: 0.4682
+Batch 110, Current loss: 0.5676
+Batch 120, Current loss: 0.4991
+Warning: NaN gradients fixed at batch 126
+Batch 130, Current loss: 0.4699
+Warning: NaN gradients fixed at batch 135
+Batch 140, Current loss: 0.5311
+Batch 150, Current loss: 0.5220
+Batch 160, Current loss: 0.5212
+Batch 170, Current loss: 0.5084
+Train avg_loss: 0.5070
+Validation avg_loss: 1.8782
+Epoch time: 43.34 seconds
+
+Epoch 10/50
+Batch 0, Current loss: 0.5105
+Batch 10, Current loss: 0.5674
+Batch 20, Current loss: 0.5309
+Warning: NaN gradients fixed at batch 21
+Warning: NaN gradients fixed at batch 29
+Batch 30, Current loss: 0.4909
+Batch 40, Current loss: 0.4960
+Batch 50, Current loss: 0.5073
+Warning: NaN gradients fixed at batch 53
+Batch 60, Current loss: 0.4769
+Batch 70, Current loss: 0.5181
+Batch 80, Current loss: 0.4682
+Warning: NaN gradients fixed at batch 83
+Batch 90, Current loss: 0.5368
+Warning: NaN gradients fixed at batch 91
+Batch 100, Current loss: 0.4862
+Warning: NaN gradients fixed at batch 110
+Batch 110, Current loss: 0.5188
+Batch 120, Current loss: 0.4764
+Batch 130, Current loss: 0.5218
+Batch 140, Current loss: 0.5211
+Warning: NaN gradients fixed at batch 144
+Batch 150, Current loss: 0.5044
+Batch 160, Current loss: 0.5490
+Batch 170, Current loss: 0.5422
+Train avg_loss: 0.5037
+Validation avg_loss: 1.4953
+Saved new best model
+Epoch time: 43.94 seconds
+
+Epoch 11/50
+Batch 0, Current loss: 0.5080
+Batch 10, Current loss: 0.4811
+Batch 20, Current loss: 0.5052
+Batch 30, Current loss: 0.5009
+Warning: NaN gradients fixed at batch 32
+Batch 40, Current loss: 0.5092
+Batch 50, Current loss: 0.5399
+Warning: NaN gradients fixed at batch 52
+Batch 60, Current loss: 0.4737
+Batch 70, Current loss: 0.4959
+Batch 80, Current loss: 0.5249
+Batch 90, Current loss: 0.5165
+Warning: NaN gradients fixed at batch 100
+Batch 100, Current loss: 0.5593
+Batch 110, Current loss: 0.5283
+Warning: NaN gradients fixed at batch 119
+Batch 120, Current loss: 0.4724
+Warning: NaN gradients fixed at batch 130
+Batch 130, Current loss: 0.5471
+Batch 140, Current loss: 0.4929
+Batch 150, Current loss: 0.5204
+Warning: NaN gradients fixed at batch 151
+Batch 160, Current loss: 0.4694
+Batch 170, Current loss: 0.4949
+Warning: NaN gradients fixed at batch 177
+Train avg_loss: 0.4993
+Validation avg_loss: 1.6191
+Epoch time: 43.37 seconds
+
+Epoch 12/50
+Batch 0, Current loss: 0.5310
+Batch 10, Current loss: 0.4918
+Warning: NaN gradients fixed at batch 17
+Batch 20, Current loss: 0.4662
+Warning: NaN gradients fixed at batch 23
+Batch 30, Current loss: 0.4774
+Batch 40, Current loss: 0.4774
+Warning: NaN gradients fixed at batch 41
+Batch 50, Current loss: 0.4845
+Warning: NaN gradients fixed at batch 60
+Batch 60, Current loss: 0.5204
+Batch 70, Current loss: 0.4613
+Batch 80, Current loss: 0.4750
+Batch 90, Current loss: 0.5147
+Batch 100, Current loss: 0.4559
+Warning: NaN gradients fixed at batch 104
+Batch 110, Current loss: 0.5084
+Warning: NaN gradients fixed at batch 116
+Batch 120, Current loss: 0.5028
+Batch 130, Current loss: 0.4797
+Batch 140, Current loss: 0.5378
+Batch 150, Current loss: 0.4541
+Batch 160, Current loss: 0.4835
+Batch 170, Current loss: 0.4659
+Warning: NaN gradients fixed at batch 179
+Train avg_loss: 0.4933
+Validation avg_loss: 1.4992
+Epoch time: 43.36 seconds
+
+Epoch 13/50
+Batch 0, Current loss: 0.5060
+Batch 10, Current loss: 0.4727
+Batch 20, Current loss: 0.4540
+Batch 30, Current loss: 0.4637
+Warning: NaN gradients fixed at batch 31
+Warning: NaN gradients fixed at batch 36
+Batch 40, Current loss: 0.4949
+Warning: NaN gradients fixed at batch 41
+Batch 50, Current loss: 0.4528
+Batch 60, Current loss: 0.5214
+Warning: NaN gradients fixed at batch 70
+Batch 70, Current loss: 0.5217
+Batch 80, Current loss: 0.4670
+Batch 90, Current loss: 0.4854
+Batch 100, Current loss: 0.4974
+Batch 110, Current loss: 0.4656
+Batch 120, Current loss: 0.4686
+Warning: NaN gradients fixed at batch 128
+Batch 130, Current loss: 0.4751
+Batch 140, Current loss: 0.4782
+Batch 150, Current loss: 0.4699
+Batch 160, Current loss: 0.4780
+Batch 170, Current loss: 0.4977
+Warning: NaN gradients fixed at batch 176
+Train avg_loss: 0.4890
+Validation avg_loss: 1.4610
+Saved new best model
+Epoch time: 43.96 seconds
+
+Epoch 14/50
+Batch 0, Current loss: 0.4370
+Batch 10, Current loss: 0.4891
+Batch 20, Current loss: 0.5084
+Batch 30, Current loss: 0.4521
+Batch 40, Current loss: 0.5210
+Warning: NaN gradients fixed at batch 48
+Batch 50, Current loss: 0.4127
+Batch 60, Current loss: 0.4738
+Batch 70, Current loss: 0.4746
+Batch 80, Current loss: 0.4850
+Warning: NaN gradients fixed at batch 85
+Batch 90, Current loss: 0.4748
+Batch 100, Current loss: 0.4657
+Warning: NaN gradients fixed at batch 110
+Batch 110, Current loss: 0.5176
+Warning: NaN gradients fixed at batch 117
+Batch 120, Current loss: 0.4899
+Warning: NaN gradients fixed at batch 122
+Batch 130, Current loss: 0.5101
+Warning: NaN gradients fixed at batch 133
+Batch 140, Current loss: 0.4737
+Batch 150, Current loss: 0.4944
+Batch 160, Current loss: 0.5044
+Batch 170, Current loss: 0.4937
+Warning: NaN gradients fixed at batch 177
+Train avg_loss: 0.4848
+Validation avg_loss: 1.3320
+Saved new best model
+Epoch time: 43.96 seconds
+
+Epoch 15/50
+Batch 0, Current loss: 0.4563
+Batch 10, Current loss: 0.4339
+Batch 20, Current loss: 0.4903
+Warning: NaN gradients fixed at batch 23
+Batch 30, Current loss: 0.4548
+Batch 40, Current loss: 0.5707
+Warning: NaN gradients fixed at batch 45
+Batch 50, Current loss: 0.4934
+Warning: NaN gradients fixed at batch 58
+Warning: NaN gradients fixed at batch 60
+Batch 60, Current loss: 0.5526
+Batch 70, Current loss: 0.5309
+Batch 80, Current loss: 0.5221
+Batch 90, Current loss: 0.4877
+Warning: NaN gradients fixed at batch 91
+Batch 100, Current loss: 0.4874
+Batch 110, Current loss: 0.5417
+Batch 120, Current loss: 0.4947
+Batch 130, Current loss: 0.4300
+Batch 140, Current loss: 0.4393
+Batch 150, Current loss: 0.5180
+Warning: NaN gradients fixed at batch 158
+Batch 160, Current loss: 0.4881
+Warning: NaN gradients fixed at batch 168
+Batch 170, Current loss: 0.4572
+Train avg_loss: 0.4788
+Validation avg_loss: 1.3640
+Epoch time: 43.35 seconds
+
+Epoch 16/50
+Batch 0, Current loss: 0.4531
+Warning: NaN gradients fixed at batch 8
+Batch 10, Current loss: 0.4547
+Warning: NaN gradients fixed at batch 15
+Batch 20, Current loss: 0.4186
+Warning: NaN gradients fixed at batch 21
+Batch 30, Current loss: 0.4441
+Batch 40, Current loss: 0.4387
+Batch 50, Current loss: 0.5398
+Batch 60, Current loss: 0.4611
+Batch 70, Current loss: 0.4870
+Warning: NaN gradients fixed at batch 73
+Warning: NaN gradients fixed at batch 80
+Batch 80, Current loss: 0.5105
+Warning: NaN gradients fixed at batch 85
+Batch 90, Current loss: 0.4719
+Batch 100, Current loss: 0.4751
+Batch 110, Current loss: 0.4519
+Warning: NaN gradients fixed at batch 113
+Batch 120, Current loss: 0.4683
+Batch 130, Current loss: 0.4150
+Batch 140, Current loss: 0.4483
+Batch 150, Current loss: 0.5023
+Batch 160, Current loss: 0.4699
+Batch 170, Current loss: 0.4780
+Train avg_loss: 0.4750
+Validation avg_loss: 1.3352
+Epoch time: 43.36 seconds
+
+Epoch 17/50
+Batch 0, Current loss: 0.4893
+Batch 10, Current loss: 0.5194
+Batch 20, Current loss: 0.4077
+Warning: NaN gradients fixed at batch 22
+Batch 30, Current loss: 0.4709
+Warning: NaN gradients fixed at batch 35
+Batch 40, Current loss: 0.5101
+Warning: NaN gradients fixed at batch 46
+Batch 50, Current loss: 0.4414
+Batch 60, Current loss: 0.4870
+Batch 70, Current loss: 0.4942
+Batch 80, Current loss: 0.4745
+Warning: NaN gradients fixed at batch 85
+Batch 90, Current loss: 0.4398
+Batch 100, Current loss: 0.4475
+Batch 110, Current loss: 0.4488
+Batch 120, Current loss: 0.4708
+Warning: NaN gradients fixed at batch 126
+Batch 130, Current loss: 0.4553
+Batch 140, Current loss: 0.4611
+Batch 150, Current loss: 0.4395
+Batch 160, Current loss: 0.4979
+Warning: NaN gradients fixed at batch 162
+Warning: NaN gradients fixed at batch 165
+Batch 170, Current loss: 0.4679
+Train avg_loss: 0.4699
+Validation avg_loss: 1.2931
+Saved new best model
+Epoch time: 43.96 seconds
+
+Epoch 18/50
+Batch 0, Current loss: 0.4848
+Batch 10, Current loss: 0.4249
+Batch 20, Current loss: 0.4851
+Batch 30, Current loss: 0.4337
+Batch 40, Current loss: 0.5168
+Batch 50, Current loss: 0.5012
+Warning: NaN gradients fixed at batch 59
+Batch 60, Current loss: 0.4987
+Warning: NaN gradients fixed at batch 69
+Batch 70, Current loss: 0.4619
+Warning: NaN gradients fixed at batch 73
+Batch 80, Current loss: 0.4386
+Warning: NaN gradients fixed at batch 86
+Batch 90, Current loss: 0.4545
+Batch 100, Current loss: 0.4690
+Warning: NaN gradients fixed at batch 101
+Batch 110, Current loss: 0.4278
+Batch 120, Current loss: 0.4641
+Warning: NaN gradients fixed at batch 125
+Batch 130, Current loss: 0.5026
+Warning: NaN gradients fixed at batch 139
+Batch 140, Current loss: 0.4444
+Batch 150, Current loss: 0.4921
+Batch 160, Current loss: 0.5210
+Batch 170, Current loss: 0.4418
+Train avg_loss: 0.4651
+Validation avg_loss: 1.1487
+Saved new best model
+Epoch time: 43.95 seconds
+
+Epoch 19/50
+Batch 0, Current loss: 0.4487
+Batch 10, Current loss: 0.4323
+Warning: NaN gradients fixed at batch 15
+Batch 20, Current loss: 0.4429
+Batch 30, Current loss: 0.4675
+Batch 40, Current loss: 0.4734
+Batch 50, Current loss: 0.4547
+Batch 60, Current loss: 0.4492
+Warning: NaN gradients fixed at batch 67
+Batch 70, Current loss: 0.4389
+Batch 80, Current loss: 0.4966
+Warning: NaN gradients fixed at batch 81
+Batch 90, Current loss: 0.4403
+Batch 100, Current loss: 0.4711
+Batch 110, Current loss: 0.4996
+Warning: NaN gradients fixed at batch 118
+Warning: NaN gradients fixed at batch 119
+Batch 120, Current loss: 0.5369
+Warning: NaN gradients fixed at batch 121
+Batch 130, Current loss: 0.4649
+Warning: NaN gradients fixed at batch 137
+Batch 140, Current loss: 0.4074
+Batch 150, Current loss: 0.4500
+Batch 160, Current loss: 0.5327
+Batch 170, Current loss: 0.3949
+Train avg_loss: 0.4643
+Validation avg_loss: 1.3170
+Epoch time: 43.34 seconds
+
+Epoch 20/50
+Batch 0, Current loss: 0.4605
+Batch 10, Current loss: 0.4433
+Batch 20, Current loss: 0.4601
+Batch 30, Current loss: 0.4953
+Warning: NaN gradients fixed at batch 34
+Batch 40, Current loss: 0.4295
+Batch 50, Current loss: 0.4808
+Warning: NaN gradients fixed at batch 60
+Batch 60, Current loss: 0.5228
+Batch 70, Current loss: 0.4256
+Warning: NaN gradients fixed at batch 75
+Batch 80, Current loss: 0.4183
+Batch 90, Current loss: 0.5115
+Warning: NaN gradients fixed at batch 98
+Batch 100, Current loss: 0.4673
+Warning: NaN gradients fixed at batch 106
+Batch 110, Current loss: 0.4145
+Warning: NaN gradients fixed at batch 120
+Batch 120, Current loss: 0.4310
+Batch 130, Current loss: 0.4892
+Batch 140, Current loss: 0.4689
+Batch 150, Current loss: 0.4476
+Batch 160, Current loss: 0.5227
+Batch 170, Current loss: 0.4710
+Warning: NaN gradients fixed at batch 176
+Train avg_loss: 0.4598
+Validation avg_loss: 1.5294
+Epoch time: 43.36 seconds
+
+Epoch 21/50
+Batch 0, Current loss: 0.4393
+Batch 10, Current loss: 0.4298
+Batch 20, Current loss: 0.4669
+Batch 30, Current loss: 0.5228
+Warning: NaN gradients fixed at batch 33
+Batch 40, Current loss: 0.5186
+Batch 50, Current loss: 0.4153
+Batch 60, Current loss: 0.4866
+Warning: NaN gradients fixed at batch 66
+Batch 70, Current loss: 0.4944
+Warning: NaN gradients fixed at batch 72
+Batch 80, Current loss: 0.4471
+Batch 90, Current loss: 0.4672
+Batch 100, Current loss: 0.4178
+Batch 110, Current loss: 0.4863
+Batch 120, Current loss: 0.4545
+Batch 130, Current loss: 0.4601
+Batch 140, Current loss: 0.4720
+Warning: NaN gradients fixed at batch 150
+Batch 150, Current loss: 0.4751
+Batch 160, Current loss: 0.4792
+Warning: NaN gradients fixed at batch 161
+Batch 170, Current loss: 0.5042
+Warning: NaN gradients fixed at batch 174
+Warning: NaN gradients fixed at batch 175
+Train avg_loss: 0.4587
+Validation avg_loss: 1.1975
+Epoch time: 43.35 seconds
+
+Epoch 22/50
+Batch 0, Current loss: 0.4935
+Batch 10, Current loss: 0.5000
+Batch 20, Current loss: 0.3984
+Warning: NaN gradients fixed at batch 24
+Batch 30, Current loss: 0.4577
+Batch 40, Current loss: 0.3617
+Batch 50, Current loss: 0.4884
+Warning: NaN gradients fixed at batch 53
+Batch 60, Current loss: 0.4859
+Warning: NaN gradients fixed at batch 63
+Batch 70, Current loss: 0.5329
+Batch 80, Current loss: 0.4175
+Batch 90, Current loss: 0.3553
+Batch 100, Current loss: 0.4696
+Batch 110, Current loss: 0.4164
+Batch 120, Current loss: 0.4058
+Warning: NaN gradients fixed at batch 127
+Batch 130, Current loss: 0.4790
+Warning: NaN gradients fixed at batch 137
+Batch 140, Current loss: 0.4621
+Warning: NaN gradients fixed at batch 146
+Warning: NaN gradients fixed at batch 148
+Batch 150, Current loss: 0.4646
+Batch 160, Current loss: 0.5060
+Batch 170, Current loss: 0.4417
+Train avg_loss: 0.4546
+Validation avg_loss: 1.1020
+Saved new best model
+Epoch time: 43.96 seconds
+
+Epoch 23/50
+Batch 0, Current loss: 0.4315
+Warning: NaN gradients fixed at batch 8
+Batch 10, Current loss: 0.4750
+Batch 20, Current loss: 0.4534
+Batch 30, Current loss: 0.4924
+Batch 40, Current loss: 0.4497
+Batch 50, Current loss: 0.4200
+Batch 60, Current loss: 0.4789
+Warning: NaN gradients fixed at batch 69
+Batch 70, Current loss: 0.4504
+Warning: NaN gradients fixed at batch 75
+Batch 80, Current loss: 0.4161
+Batch 90, Current loss: 0.4295
+Batch 100, Current loss: 0.4783
+Warning: NaN gradients fixed at batch 108
+Batch 110, Current loss: 0.4218
+Batch 120, Current loss: 0.4440
+Batch 130, Current loss: 0.4501
+Warning: NaN gradients fixed at batch 138
+Batch 140, Current loss: 0.4332
+Batch 150, Current loss: 0.4348
+Warning: NaN gradients fixed at batch 154
+Batch 160, Current loss: 0.4527
+Batch 170, Current loss: 0.4704
+Warning: NaN gradients fixed at batch 179
+Train avg_loss: 0.4537
+Validation avg_loss: 1.1109
+Epoch time: 43.39 seconds
+
+Epoch 24/50
+Batch 0, Current loss: 0.4716
+Batch 10, Current loss: 0.4549
+Warning: NaN gradients fixed at batch 14
+Batch 20, Current loss: 0.4693
+Warning: NaN gradients fixed at batch 26
+Batch 30, Current loss: 0.4764
+Batch 40, Current loss: 0.4472
+Batch 50, Current loss: 0.4711
+Batch 60, Current loss: 0.4138
+Batch 70, Current loss: 0.4613
+Batch 80, Current loss: 0.5116
+Batch 90, Current loss: 0.4977
+Batch 100, Current loss: 0.4452
+Warning: NaN gradients fixed at batch 104
+Batch 110, Current loss: 0.4259
+Batch 120, Current loss: 0.4156
+Batch 130, Current loss: 0.4282
+Batch 140, Current loss: 0.4315
+Warning: NaN gradients fixed at batch 141
+Batch 150, Current loss: 0.4665
+Warning: NaN gradients fixed at batch 153
+Warning: NaN gradients fixed at batch 157
+Batch 160, Current loss: 0.4358
+Warning: NaN gradients fixed at batch 170
+Batch 170, Current loss: 0.5304
+Train avg_loss: 0.4523
+Validation avg_loss: 1.0786
+Saved new best model
+Epoch time: 43.97 seconds
+
+Epoch 25/50
+Batch 0, Current loss: 0.4788
+Batch 10, Current loss: 0.4284
+Batch 20, Current loss: 0.3844
+Batch 30, Current loss: 0.4663
+Warning: NaN gradients fixed at batch 38
+Warning: NaN gradients fixed at batch 40
+Batch 40, Current loss: 0.4855
+Batch 50, Current loss: 0.4685
+Batch 60, Current loss: 0.4243
+Batch 70, Current loss: 0.4761
+Batch 80, Current loss: 0.4274
+Batch 90, Current loss: 0.4541
+Warning: NaN gradients fixed at batch 94
+Batch 100, Current loss: 0.5167
+Batch 110, Current loss: 0.4221
+Warning: NaN gradients fixed at batch 116
+Batch 120, Current loss: 0.3874
+Warning: NaN gradients fixed at batch 123
+Warning: NaN gradients fixed at batch 125
+Batch 130, Current loss: 0.5156
+Batch 140, Current loss: 0.4454
+Batch 150, Current loss: 0.5128
+Warning: NaN gradients fixed at batch 152
+Batch 160, Current loss: 0.4133
+Batch 170, Current loss: 0.4853
+Train avg_loss: 0.4544
+Validation avg_loss: 1.0734
+Saved new best model
+Epoch time: 43.94 seconds
+
+Epoch 26/50
+Batch 0, Current loss: 0.4609
+Batch 10, Current loss: 0.4572
+Warning: NaN gradients fixed at batch 16
+Batch 20, Current loss: 0.4604
+Warning: NaN gradients fixed at batch 30
+Batch 30, Current loss: 0.5333
+Batch 40, Current loss: 0.4115
+Batch 50, Current loss: 0.4256
+Batch 60, Current loss: 0.4943
+Warning: NaN gradients fixed at batch 67
+Batch 70, Current loss: 0.5227
+Batch 80, Current loss: 0.4659
+Warning: NaN gradients fixed at batch 82
+Warning: NaN gradients fixed at batch 88
+Batch 90, Current loss: 0.5061
+Warning: NaN gradients fixed at batch 97
+Batch 100, Current loss: 0.4759
+Batch 110, Current loss: 0.4946
+Batch 120, Current loss: 0.5212
+Batch 130, Current loss: 0.4505
+Batch 140, Current loss: 0.4278
+Batch 150, Current loss: 0.3758
+Batch 160, Current loss: 0.4973
+Batch 170, Current loss: 0.4234
+Warning: NaN gradients fixed at batch 175
+Train avg_loss: 0.4481
+Validation avg_loss: 1.1788
+Epoch time: 43.37 seconds
+
+Epoch 27/50
+Batch 0, Current loss: 0.3677
+Batch 10, Current loss: 0.4576
+Warning: NaN gradients fixed at batch 12
+Batch 20, Current loss: 0.4549
+Batch 30, Current loss: 0.4463
+Batch 40, Current loss: 0.4666
+Batch 50, Current loss: 0.4539
+Warning: NaN gradients fixed at batch 53
+Warning: NaN gradients fixed at batch 58
+Batch 60, Current loss: 0.4689
+Batch 70, Current loss: 0.4774
+Warning: NaN gradients fixed at batch 74
+Warning: NaN gradients fixed at batch 76
+Batch 80, Current loss: 0.4586
+Batch 90, Current loss: 0.4486
+Batch 100, Current loss: 0.4308
+Batch 110, Current loss: 0.4031
+Batch 120, Current loss: 0.3992
+Warning: NaN gradients fixed at batch 128
+Batch 130, Current loss: 0.3948
+Batch 140, Current loss: 0.4756
+Batch 150, Current loss: 0.4469
+Batch 160, Current loss: 0.4125
+Batch 170, Current loss: 0.4059
+Warning: NaN gradients fixed at batch 174
+Train avg_loss: 0.4479
+Validation avg_loss: 1.1004
+Epoch time: 43.36 seconds
+
+Epoch 28/50
+Batch 0, Current loss: 0.4774
+Batch 10, Current loss: 0.4574
+Batch 20, Current loss: 0.4235
+Batch 30, Current loss: 0.4792
+Batch 40, Current loss: 0.4767
+Batch 50, Current loss: 0.4594
+Batch 60, Current loss: 0.4157
+Warning: NaN gradients fixed at batch 68
+Batch 70, Current loss: 0.3704
+Warning: NaN gradients fixed at batch 71
+Warning: NaN gradients fixed at batch 78
+Batch 80, Current loss: 0.4387
+Batch 90, Current loss: 0.4580
+Warning: NaN gradients fixed at batch 96
+Warning: NaN gradients fixed at batch 99
+Batch 100, Current loss: 0.4273
+Batch 110, Current loss: 0.4587
+Warning: NaN gradients fixed at batch 111
+Batch 120, Current loss: 0.4581
+Warning: NaN gradients fixed at batch 127
+Batch 130, Current loss: 0.4706
+Batch 140, Current loss: 0.3661
+Batch 150, Current loss: 0.4688
+Batch 160, Current loss: 0.4820
+Batch 170, Current loss: 0.5223
+Train avg_loss: 0.4453
+Validation avg_loss: 1.0674
+Saved new best model
+Epoch time: 43.93 seconds
+
+Epoch 29/50
+Batch 0, Current loss: 0.4431
+Batch 10, Current loss: 0.4802
+Batch 20, Current loss: 0.4133
+Batch 30, Current loss: 0.4911
+Warning: NaN gradients fixed at batch 36
+Warning: NaN gradients fixed at batch 40
+Batch 40, Current loss: 0.4477
+Batch 50, Current loss: 0.4697
+Batch 60, Current loss: 0.4846
+Batch 70, Current loss: 0.4281
+Warning: NaN gradients fixed at batch 76
+Batch 80, Current loss: 0.4537
+Batch 90, Current loss: 0.5131
+Batch 100, Current loss: 0.4273
+Batch 110, Current loss: 0.4625
+Warning: NaN gradients fixed at batch 120
+Batch 120, Current loss: 0.5109
+Batch 130, Current loss: 0.3959
+Warning: NaN gradients fixed at batch 133
+Batch 140, Current loss: 0.4338
+Batch 150, Current loss: 0.4555
+Batch 160, Current loss: 0.4070
+Warning: NaN gradients fixed at batch 167
+Batch 170, Current loss: 0.4864
+Train avg_loss: 0.4462
+Validation avg_loss: 1.0350
+Saved new best model
+Epoch time: 44.02 seconds
+
+Epoch 30/50
+Batch 0, Current loss: 0.4503
+Warning: NaN gradients fixed at batch 6
+Batch 10, Current loss: 0.4413
+Warning: NaN gradients fixed at batch 13
+Warning: NaN gradients fixed at batch 16
+Batch 20, Current loss: 0.4398
+Batch 30, Current loss: 0.3942
+Batch 40, Current loss: 0.4742
+Batch 50, Current loss: 0.4113
+Batch 60, Current loss: 0.4861
+Batch 70, Current loss: 0.4352
+Warning: NaN gradients fixed at batch 74
+Warning: NaN gradients fixed at batch 77
+Batch 80, Current loss: 0.4913
+Batch 90, Current loss: 0.4198
+Batch 100, Current loss: 0.4344
+Batch 110, Current loss: 0.4134
+Batch 120, Current loss: 0.3565
+Batch 130, Current loss: 0.4385
+Batch 140, Current loss: 0.4544
+Batch 150, Current loss: 0.4974
+Warning: NaN gradients fixed at batch 154
+Warning: NaN gradients fixed at batch 158
+Batch 160, Current loss: 0.3936
+Batch 170, Current loss: 0.4538
+Train avg_loss: 0.4462
+Validation avg_loss: 1.2265
+Epoch time: 43.33 seconds
+
+Epoch 31/50
+Batch 0, Current loss: 0.4053
+Warning: NaN gradients fixed at batch 10
+Batch 10, Current loss: 0.5034
+Batch 20, Current loss: 0.4617
+Batch 30, Current loss: 0.5233
+Batch 40, Current loss: 0.4056
+Batch 50, Current loss: 0.4639
+Batch 60, Current loss: 0.4975
+Warning: NaN gradients fixed at batch 66
+Batch 70, Current loss: 0.4435
+Batch 80, Current loss: 0.4235
+Warning: NaN gradients fixed at batch 85
+Batch 90, Current loss: 0.4091
+Batch 100, Current loss: 0.4564
+Warning: NaN gradients fixed at batch 108
+Batch 110, Current loss: 0.4088
+Batch 120, Current loss: 0.4712
+Warning: NaN gradients fixed at batch 121
+Batch 130, Current loss: 0.4191
+Batch 140, Current loss: 0.4701
+Warning: NaN gradients fixed at batch 143
+Warning: NaN gradients fixed at batch 148
+Batch 150, Current loss: 0.4610
+Batch 160, Current loss: 0.3867
+Batch 170, Current loss: 0.4041
+Train avg_loss: 0.4438
+Validation avg_loss: 1.0340
+Saved new best model
+Epoch time: 43.94 seconds
+
+Epoch 32/50
+Batch 0, Current loss: 0.4037
+Warning: NaN gradients fixed at batch 5
+Warning: NaN gradients fixed at batch 6
+Batch 10, Current loss: 0.5067
+Batch 20, Current loss: 0.4146
+Batch 30, Current loss: 0.4140
+Batch 40, Current loss: 0.4113
+Batch 50, Current loss: 0.4338
+Batch 60, Current loss: 0.4288
+Batch 70, Current loss: 0.4586
+Batch 80, Current loss: 0.4972
+Batch 90, Current loss: 0.5145
+Warning: NaN gradients fixed at batch 91
+Warning: NaN gradients fixed at batch 96
+Warning: NaN gradients fixed at batch 97
+Batch 100, Current loss: 0.4467
+Batch 110, Current loss: 0.4286
+Batch 120, Current loss: 0.4389
+Batch 130, Current loss: 0.4067
+Warning: NaN gradients fixed at batch 131
+Batch 140, Current loss: 0.4198
+Batch 150, Current loss: 0.3957
+Batch 160, Current loss: 0.4205
+Warning: NaN gradients fixed at batch 162
+Batch 170, Current loss: 0.4412
+Train avg_loss: 0.4412
+Validation avg_loss: 1.0843
+Epoch time: 43.38 seconds
+
+Epoch 33/50
+Batch 0, Current loss: 0.4301
+Warning: NaN gradients fixed at batch 1
+Batch 10, Current loss: 0.4955
+Warning: NaN gradients fixed at batch 16
+Batch 20, Current loss: 0.3955
+Batch 30, Current loss: 0.4351
+Batch 40, Current loss: 0.4098
+Batch 50, Current loss: 0.4430
+Warning: NaN gradients fixed at batch 55
+Batch 60, Current loss: 0.4644
+Batch 70, Current loss: 0.4439
+Batch 80, Current loss: 0.4222
+Warning: NaN gradients fixed at batch 81
+Batch 90, Current loss: 0.4603
+Batch 100, Current loss: 0.4391
+Warning: NaN gradients fixed at batch 107
+Batch 110, Current loss: 0.4465
+Batch 120, Current loss: 0.3789
+Warning: NaN gradients fixed at batch 126
+Batch 130, Current loss: 0.4511
+Warning: NaN gradients fixed at batch 132
+Batch 140, Current loss: 0.4058
+Batch 150, Current loss: 0.3690
+Batch 160, Current loss: 0.4442
+Batch 170, Current loss: 0.3476
+Train avg_loss: 0.4406
+Validation avg_loss: 1.0823
+Epoch time: 43.38 seconds
+
+Epoch 34/50
+Batch 0, Current loss: 0.4572
+Batch 10, Current loss: 0.4661
+Batch 20, Current loss: 0.4274
+Batch 30, Current loss: 0.4476
+Warning: NaN gradients fixed at batch 38
+Batch 40, Current loss: 0.4277
+Batch 50, Current loss: 0.4684
+Batch 60, Current loss: 0.4496
+Warning: NaN gradients fixed at batch 70
+Batch 70, Current loss: 0.5253
+Batch 80, Current loss: 0.4608
+Batch 90, Current loss: 0.4198
+Warning: NaN gradients fixed at batch 97
+Batch 100, Current loss: 0.4173
+Batch 110, Current loss: 0.4253
+Batch 120, Current loss: 0.4754
+Warning: NaN gradients fixed at batch 126
+Batch 130, Current loss: 0.3863
+Warning: NaN gradients fixed at batch 137
+Batch 140, Current loss: 0.4611
+Batch 150, Current loss: 0.4135
+Warning: NaN gradients fixed at batch 156
+Warning: NaN gradients fixed at batch 158
+Batch 160, Current loss: 0.4018
+Batch 170, Current loss: 0.4079
+Train avg_loss: 0.4406
+Validation avg_loss: 0.9907
+Saved new best model
+Epoch time: 43.98 seconds
+
+Epoch 35/50
+Batch 0, Current loss: 0.4375
+Batch 10, Current loss: 0.4453
+Batch 20, Current loss: 0.4614
+Batch 30, Current loss: 0.4219
+Batch 40, Current loss: 0.4569
+Batch 50, Current loss: 0.4715
+Warning: NaN gradients fixed at batch 56
+Batch 60, Current loss: 0.4193
+Warning: NaN gradients fixed at batch 62
+Batch 70, Current loss: 0.4679
+Batch 80, Current loss: 0.3648
+Batch 90, Current loss: 0.4315
+Batch 100, Current loss: 0.4704
+Batch 110, Current loss: 0.4041
+Batch 120, Current loss: 0.4933
+Warning: NaN gradients fixed at batch 130
+Batch 130, Current loss: 0.5373
+Warning: NaN gradients fixed at batch 132
+Warning: NaN gradients fixed at batch 134
+Batch 140, Current loss: 0.4505
+Warning: NaN gradients fixed at batch 143
+Batch 150, Current loss: 0.4551
+Batch 160, Current loss: 0.4802
+Batch 170, Current loss: 0.4453
+Warning: NaN gradients fixed at batch 173
+Train avg_loss: 0.4407
+Validation avg_loss: 1.1758
+Epoch time: 43.38 seconds
+
+Epoch 36/50
+Batch 0, Current loss: 0.4495
+Warning: NaN gradients fixed at batch 7
+Batch 10, Current loss: 0.4673
+Warning: NaN gradients fixed at batch 11
+Batch 20, Current loss: 0.3851
+Batch 30, Current loss: 0.4534
+Batch 40, Current loss: 0.4690
+Batch 50, Current loss: 0.3891
+Batch 60, Current loss: 0.3986
+Warning: NaN gradients fixed at batch 65
+Warning: NaN gradients fixed at batch 69
+Batch 70, Current loss: 0.4460
+Batch 80, Current loss: 0.5017
+Batch 90, Current loss: 0.4298
+Warning: NaN gradients fixed at batch 96
+Batch 100, Current loss: 0.4272
+Batch 110, Current loss: 0.4382
+Batch 120, Current loss: 0.4412
+Batch 130, Current loss: 0.4519
+Batch 140, Current loss: 0.4640
+Batch 150, Current loss: 0.4489
+Batch 160, Current loss: 0.4302
+Warning: NaN gradients fixed at batch 169
+Warning: NaN gradients fixed at batch 170
+Batch 170, Current loss: 0.5128
+Train avg_loss: 0.4426
+Validation avg_loss: 0.9798
+Saved new best model
+Epoch time: 43.98 seconds
+
+Epoch 37/50
+Batch 0, Current loss: 0.4565
+Warning: NaN gradients fixed at batch 6
+Warning: NaN gradients fixed at batch 7
+Batch 10, Current loss: 0.4399
+Batch 20, Current loss: 0.4143
+Batch 30, Current loss: 0.4754
+Batch 40, Current loss: 0.5026
+Batch 50, Current loss: 0.4408
+Batch 60, Current loss: 0.4085
+Batch 70, Current loss: 0.4287
+Warning: NaN gradients fixed at batch 72
+Warning: NaN gradients fixed at batch 75
+Batch 80, Current loss: 0.4508
+Warning: NaN gradients fixed at batch 81
+Batch 90, Current loss: 0.4508
+Batch 100, Current loss: 0.4282
+Batch 110, Current loss: 0.4717
+Batch 120, Current loss: 0.5033
+Batch 130, Current loss: 0.4228
+Batch 140, Current loss: 0.4521
+Warning: NaN gradients fixed at batch 149
+Batch 150, Current loss: 0.4617
+Warning: NaN gradients fixed at batch 155
+Batch 160, Current loss: 0.4275
+Batch 170, Current loss: 0.4032
+Train avg_loss: 0.4391
+Validation avg_loss: 1.2562
+Epoch time: 43.37 seconds
+
+Epoch 38/50
+Warning: NaN gradients fixed at batch 0
+Batch 0, Current loss: 0.4752
+Batch 10, Current loss: 0.4568
+Warning: NaN gradients fixed at batch 16
+Batch 20, Current loss: 0.4222
+Batch 30, Current loss: 0.4129
+Warning: NaN gradients fixed at batch 37
+Batch 40, Current loss: 0.4690
+Batch 50, Current loss: 0.4586
+Batch 60, Current loss: 0.4103
+Batch 70, Current loss: 0.4142
+Batch 80, Current loss: 0.4388
+Warning: NaN gradients fixed at batch 82
+Warning: NaN gradients fixed at batch 86
+Batch 90, Current loss: 0.4855
+Batch 100, Current loss: 0.4114
+Batch 110, Current loss: 0.3752
+Batch 120, Current loss: 0.4799
+Batch 130, Current loss: 0.4646
+Batch 140, Current loss: 0.4091
+Batch 150, Current loss: 0.3789
+Batch 160, Current loss: 0.4641
+Warning: NaN gradients fixed at batch 168
+Batch 170, Current loss: 0.4255
+Train avg_loss: 0.4383
+Validation avg_loss: 1.1775
+Epoch time: 43.37 seconds
+
+Epoch 39/50
+Batch 0, Current loss: 0.4611
+Warning: NaN gradients fixed at batch 6
+Batch 10, Current loss: 0.4879
+Warning: NaN gradients fixed at batch 19
+Batch 20, Current loss: 0.4384
+Batch 30, Current loss: 0.4380
+Batch 40, Current loss: 0.4545
+Batch 50, Current loss: 0.4590
+Batch 60, Current loss: 0.4500
+Warning: NaN gradients fixed at batch 61
+Batch 70, Current loss: 0.4784
+Batch 80, Current loss: 0.4458
+Batch 90, Current loss: 0.4124
+Warning: NaN gradients fixed at batch 97
+Warning: NaN gradients fixed at batch 100
+Batch 100, Current loss: 0.5035
+Batch 110, Current loss: 0.4198
+Batch 120, Current loss: 0.4719
+Batch 130, Current loss: 0.4567
+Batch 140, Current loss: 0.4367
+Warning: NaN gradients fixed at batch 144
+Batch 150, Current loss: 0.4267
+Batch 160, Current loss: 0.4111
+Batch 170, Current loss: 0.4581
+Train avg_loss: 0.4386
+Validation avg_loss: 0.9469
+Saved new best model
+Epoch time: 43.96 seconds
+
+Epoch 40/50
+Batch 0, Current loss: 0.4601
+Batch 10, Current loss: 0.4987
+Batch 20, Current loss: 0.4011
+Batch 30, Current loss: 0.4310
+Warning: NaN gradients fixed at batch 34
+Batch 40, Current loss: 0.4136
+Batch 50, Current loss: 0.4082
+Batch 60, Current loss: 0.4114
+Batch 70, Current loss: 0.4412
+Warning: NaN gradients fixed at batch 74
+Batch 80, Current loss: 0.4619
+Warning: NaN gradients fixed at batch 90
+Batch 90, Current loss: 0.5342
+Batch 100, Current loss: 0.4027
+Warning: NaN gradients fixed at batch 109
+Batch 110, Current loss: 0.4083
+Batch 120, Current loss: 0.4466
+Batch 130, Current loss: 0.4229
+Warning: NaN gradients fixed at batch 138
+Batch 140, Current loss: 0.4170
+Warning: NaN gradients fixed at batch 149
+Batch 150, Current loss: 0.4381
+Warning: NaN gradients fixed at batch 154
+Batch 160, Current loss: 0.4004
+Batch 170, Current loss: 0.4377
+Train avg_loss: 0.4362
+Validation avg_loss: 1.1592
+Epoch time: 43.35 seconds
+
+Epoch 41/50
+Batch 0, Current loss: 0.4064
+Batch 10, Current loss: 0.4162
+Warning: NaN gradients fixed at batch 14
+Batch 20, Current loss: 0.4002
+Warning: NaN gradients fixed at batch 24
+Batch 30, Current loss: 0.4240
+Batch 40, Current loss: 0.4544
+Batch 50, Current loss: 0.4410
+Batch 60, Current loss: 0.3850
+Batch 70, Current loss: 0.4258
+Warning: NaN gradients fixed at batch 75
+Batch 80, Current loss: 0.4667
+Batch 90, Current loss: 0.4624
+Batch 100, Current loss: 0.4279
+Warning: NaN gradients fixed at batch 109
+Batch 110, Current loss: 0.4003
+Batch 120, Current loss: 0.4174
+Batch 130, Current loss: 0.4504
+Warning: NaN gradients fixed at batch 137
+Batch 140, Current loss: 0.4025
+Warning: NaN gradients fixed at batch 142
+Batch 150, Current loss: 0.4181
+Warning: NaN gradients fixed at batch 153
+Batch 160, Current loss: 0.4311
+Batch 170, Current loss: 0.4875
+Train avg_loss: 0.4367
+Validation avg_loss: 0.9375
+Saved new best model
+Epoch time: 43.98 seconds
+
+Epoch 42/50
+Batch 0, Current loss: 0.4699
+Batch 10, Current loss: 0.4765
+Warning: NaN gradients fixed at batch 18
+Batch 20, Current loss: 0.4621
+Warning: NaN gradients fixed at batch 25
+Batch 30, Current loss: 0.3730
+Batch 40, Current loss: 0.4090
+Batch 50, Current loss: 0.4166
+Batch 60, Current loss: 0.4321
+Batch 70, Current loss: 0.4008
+Warning: NaN gradients fixed at batch 79
+Batch 80, Current loss: 0.4819
+Warning: NaN gradients fixed at batch 86
+Warning: NaN gradients fixed at batch 87
+Batch 90, Current loss: 0.4483
+Batch 100, Current loss: 0.4572
+Warning: NaN gradients fixed at batch 110
+Batch 110, Current loss: 0.5131
+Batch 120, Current loss: 0.4400
+Batch 130, Current loss: 0.4669
+Warning: NaN gradients fixed at batch 132
+Batch 140, Current loss: 0.4581
+Batch 150, Current loss: 0.4312
+Batch 160, Current loss: 0.5153
+Batch 170, Current loss: 0.4133
+Train avg_loss: 0.4310
+Validation avg_loss: 1.1182
+Epoch time: 43.35 seconds
+
+Epoch 43/50
+Batch 0, Current loss: 0.4463
+Batch 10, Current loss: 0.4319
+Batch 20, Current loss: 0.4191
+Warning: NaN gradients fixed at batch 26
+Batch 30, Current loss: 0.3918
+Batch 40, Current loss: 0.4088
+Batch 50, Current loss: 0.4529
+Warning: NaN gradients fixed at batch 56
+Batch 60, Current loss: 0.4287
+Warning: NaN gradients fixed at batch 67
+Batch 70, Current loss: 0.3912
+Batch 80, Current loss: 0.4525
+Batch 90, Current loss: 0.4226
+Warning: NaN gradients fixed at batch 91
+Batch 100, Current loss: 0.4676
+Batch 110, Current loss: 0.4037
+Warning: NaN gradients fixed at batch 119
+Batch 120, Current loss: 0.4947
+Batch 130, Current loss: 0.4243
+Batch 140, Current loss: 0.4120
+Warning: NaN gradients fixed at batch 149
+Batch 150, Current loss: 0.4661
+Batch 160, Current loss: 0.4339
+Warning: NaN gradients fixed at batch 170
+Batch 170, Current loss: 0.5287
+Train avg_loss: 0.4327
+Validation avg_loss: 0.9752
+Epoch time: 43.34 seconds
+
+Epoch 44/50
+Batch 0, Current loss: 0.4892
+Warning: NaN gradients fixed at batch 5
+Batch 10, Current loss: 0.3987
+Batch 20, Current loss: 0.4234
+Batch 30, Current loss: 0.4429
+Batch 40, Current loss: 0.4367
+Warning: NaN gradients fixed at batch 41
+Warning: NaN gradients fixed at batch 42
+Batch 50, Current loss: 0.3855
+Warning: NaN gradients fixed at batch 60
+Batch 60, Current loss: 0.4765
+Batch 70, Current loss: 0.4439
+Batch 80, Current loss: 0.3641
+Batch 90, Current loss: 0.4134
+Batch 100, Current loss: 0.4200
+Batch 110, Current loss: 0.3983
+Batch 120, Current loss: 0.4149
+Batch 130, Current loss: 0.4434
+Warning: NaN gradients fixed at batch 135
+Batch 140, Current loss: 0.4322
+Warning: NaN gradients fixed at batch 147
+Batch 150, Current loss: 0.4127
+Batch 160, Current loss: 0.4243
+Warning: NaN gradients fixed at batch 165
+Batch 170, Current loss: 0.4315
+Train avg_loss: 0.4305
+Validation avg_loss: 1.0599
+Epoch time: 43.35 seconds
+
+Epoch 45/50
+Batch 0, Current loss: 0.4270
+Batch 10, Current loss: 0.4482
+Batch 20, Current loss: 0.4545
+Warning: NaN gradients fixed at batch 26
+Batch 30, Current loss: 0.4821
+Batch 40, Current loss: 0.4308
+Warning: NaN gradients fixed at batch 48
+Batch 50, Current loss: 0.4367
+Batch 60, Current loss: 0.4238
+Batch 70, Current loss: 0.4861
+Warning: NaN gradients fixed at batch 77
+Batch 80, Current loss: 0.4343
+Warning: NaN gradients fixed at batch 83
+Warning: NaN gradients fixed at batch 90
+Batch 90, Current loss: 0.4610
+Batch 100, Current loss: 0.4793
+Batch 110, Current loss: 0.4847
+Batch 120, Current loss: 0.3574
+Batch 130, Current loss: 0.4621
+Batch 140, Current loss: 0.3929
+Batch 150, Current loss: 0.4247
+Batch 160, Current loss: 0.4932
+Warning: NaN gradients fixed at batch 162
+Warning: NaN gradients fixed at batch 168
+Batch 170, Current loss: 0.3941
+Train avg_loss: 0.4271
+Validation avg_loss: 1.0193
+Epoch time: 43.34 seconds
+
+Epoch 46/50
+Batch 0, Current loss: 0.4192
+Batch 10, Current loss: 0.4814
+Batch 20, Current loss: 0.4173
+Warning: NaN gradients fixed at batch 27
+Batch 30, Current loss: 0.4519
+Warning: NaN gradients fixed at batch 34
+Batch 40, Current loss: 0.4164
+Batch 50, Current loss: 0.3974
+Warning: NaN gradients fixed at batch 54
+Batch 60, Current loss: 0.4800
+Batch 70, Current loss: 0.4439
+Batch 80, Current loss: 0.4619
+Warning: NaN gradients fixed at batch 88
+Batch 90, Current loss: 0.4827
+Batch 100, Current loss: 0.4725
+Batch 110, Current loss: 0.4411
+Batch 120, Current loss: 0.4406
+Batch 130, Current loss: 0.4989
+Batch 140, Current loss: 0.4418
+Batch 150, Current loss: 0.5128
+Warning: NaN gradients fixed at batch 152
+Warning: NaN gradients fixed at batch 155
+Batch 160, Current loss: 0.4400
+Warning: NaN gradients fixed at batch 163
+Batch 170, Current loss: 0.4428
+Train avg_loss: 0.4274
+Validation avg_loss: 1.1015
+Epoch time: 43.35 seconds
+
+Epoch 47/50
+Batch 0, Current loss: 0.4286
+Warning: NaN gradients fixed at batch 3
+Batch 10, Current loss: 0.4323
+Warning: NaN gradients fixed at batch 11
+Batch 20, Current loss: 0.4250
+Batch 30, Current loss: 0.4375
+Warning: NaN gradients fixed at batch 38
+Batch 40, Current loss: 0.4110
+Warning: NaN gradients fixed at batch 48
+Batch 50, Current loss: 0.4205
+Batch 60, Current loss: 0.4199
+Warning: NaN gradients fixed at batch 66
+Batch 70, Current loss: 0.4161
+Batch 80, Current loss: 0.3821
+Batch 90, Current loss: 0.5029
+Warning: NaN gradients fixed at batch 94
+Batch 100, Current loss: 0.3266
+Batch 110, Current loss: 0.4158
+Batch 120, Current loss: 0.4599
+Batch 130, Current loss: 0.4433
+Warning: NaN gradients fixed at batch 135
+Batch 140, Current loss: 0.4975
+Batch 150, Current loss: 0.3854
+Batch 160, Current loss: 0.3804
+Batch 170, Current loss: 0.3568
+Train avg_loss: 0.4264
+Validation avg_loss: 1.0243
+Epoch 00047: reducing learning rate of group 0 to 8.0200e-07.
+Epoch time: 43.36 seconds
+
+Epoch 48/50
+Batch 0, Current loss: 0.4591
+Batch 10, Current loss: 0.4225
+Warning: NaN gradients fixed at batch 11
+Batch 20, Current loss: 0.4357
+Batch 30, Current loss: 0.4243
+Batch 40, Current loss: 0.3820
+Batch 50, Current loss: 0.4356
+Warning: NaN gradients fixed at batch 51
+Warning: NaN gradients fixed at batch 57
+Batch 60, Current loss: 0.3727
+Warning: NaN gradients fixed at batch 66
+Batch 70, Current loss: 0.4920
+Batch 80, Current loss: 0.4054
+Batch 90, Current loss: 0.4378
+Batch 100, Current loss: 0.4653
+Batch 110, Current loss: 0.3962
+Warning: NaN gradients fixed at batch 113
+Batch 120, Current loss: 0.4622
+Warning: NaN gradients fixed at batch 123
+Batch 130, Current loss: 0.3829
+Batch 140, Current loss: 0.3862
+Batch 150, Current loss: 0.3871
+Warning: NaN gradients fixed at batch 152
+Batch 160, Current loss: 0.3779
+Batch 170, Current loss: 0.4487
+Train avg_loss: 0.4270
+Validation avg_loss: 1.0453
+Epoch time: 43.34 seconds
+
+Epoch 49/50
+Batch 0, Current loss: 0.3703
+Warning: NaN gradients fixed at batch 5
+Batch 10, Current loss: 0.4315
+Batch 20, Current loss: 0.4105
+Batch 30, Current loss: 0.4154
+Batch 40, Current loss: 0.4707
+Batch 50, Current loss: 0.4385
+Warning: NaN gradients fixed at batch 57
+Batch 60, Current loss: 0.4205
+Batch 70, Current loss: 0.3503
+Batch 80, Current loss: 0.4553
+Warning: NaN gradients fixed at batch 88
+Batch 90, Current loss: 0.4370
+Batch 100, Current loss: 0.3889
+Batch 110, Current loss: 0.3991
+Batch 120, Current loss: 0.4663
+Batch 130, Current loss: 0.4327
+Warning: NaN gradients fixed at batch 136
+Warning: NaN gradients fixed at batch 137
+Batch 140, Current loss: 0.4052
+Batch 150, Current loss: 0.4188
+Warning: NaN gradients fixed at batch 151
+Warning: NaN gradients fixed at batch 157
+Batch 160, Current loss: 0.4055
+Batch 170, Current loss: 0.4606
+Train avg_loss: 0.4250
+Validation avg_loss: 1.0445
+Epoch time: 43.36 seconds
+
+Epoch 50/50
+Batch 0, Current loss: 0.4407
+Batch 10, Current loss: 0.4082
+Warning: NaN gradients fixed at batch 15
+Batch 20, Current loss: 0.3478
+Batch 30, Current loss: 0.4503
+Batch 40, Current loss: 0.4770
+Batch 50, Current loss: 0.4328
+Batch 60, Current loss: 0.3618
+Batch 70, Current loss: 0.4747
+Batch 80, Current loss: 0.4428
+Batch 90, Current loss: 0.4773
+Batch 100, Current loss: 0.4061
+Batch 110, Current loss: 0.4522
+Batch 120, Current loss: 0.4287
+Warning: NaN gradients fixed at batch 124
+Warning: NaN gradients fixed at batch 127
+Warning: NaN gradients fixed at batch 128
+Batch 130, Current loss: 0.4860
+Batch 140, Current loss: 0.4630
+Warning: NaN gradients fixed at batch 142
+Warning: NaN gradients fixed at batch 149
+Batch 150, Current loss: 0.4467
+Warning: NaN gradients fixed at batch 154
+Batch 160, Current loss: 0.4181
+Batch 170, Current loss: 0.4106
+Train avg_loss: 0.4248
+Validation avg_loss: 1.0447
+Epoch time: 43.33 seconds
+
+Total training time: 2178.27 seconds
+
+Loading best model for testing...
+
+Starting model testing...
+Processed test batch: 0
+Processed test batch: 10
+Processed test batch: 20
+Processed test batch: 30
+
+Test prediction statistics:
+
+Output 1:
+Mean: 2.5061
+Std: 0.0000
+Min: 2.5055
+Max: 2.5061
+
+Output 2:
+Mean: 1.9938
+Std: 0.2627
+Min: 1.0667
+Max: 2.8961
+
+Output 3:
+Mean: 1.5144
+Std: 1.0482
+Min: -2.2290
+Max: 3.0000
+
+Output 4:
+Mean: 2.2107
+Std: 0.7449
+Min: 0.0000
+Max: 3.0000
+
+Training ensemble models...
+
+lasso_output1 results:
+rmse: 1.1828
+mae: 0.9425
+r2: 0.0000
+pearson: 0.0000
+
+lasso_output2 results:
+rmse: 1.1117
+mae: 0.8837
+r2: 0.1166
+pearson: 0.3427
+
+lasso_output3 results:
+rmse: 1.1406
+mae: 0.9047
+r2: 0.0700
+pearson: 0.2647
+
+lasso_output4 results:
+rmse: 1.0779
+mae: 0.8246
+r2: 0.1695
+pearson: 0.4118
+
+elastic_output1 results:
+rmse: 1.1828
+mae: 0.9425
+r2: 0.0000
+pearson: 0.0000
+
+elastic_output2 results:
+rmse: 1.1116
+mae: 0.8837
+r2: 0.1167
+pearson: 0.3427
+
+elastic_output3 results:
+rmse: 1.1406
+mae: 0.9045
+r2: 0.0701
+pearson: 0.2647
+
+elastic_output4 results:
+rmse: 1.0779
+mae: 0.8243
+r2: 0.1695
+pearson: 0.4118
+
+rf_output1 results:
+rmse: 1.1806
+mae: 0.9392
+r2: 0.0038
+pearson: 0.0670
+
+rf_output2 results:
+rmse: 1.0016
+mae: 0.7965
+r2: 0.2829
+pearson: 0.5511
+
+rf_output3 results:
+rmse: 1.0441
+mae: 0.8280QXcbConnection: Failed to initialize XRandr
+Qt: XKEYBOARD extension not present on the X server.
+
+Bad key "text.kerning_factor" on line 4 in
+/home/nudt_cleng/anaconda3/lib/python3.7/site-packages/matplotlib/mpl-data/stylelib/_classic_test_patch.mplstyle.
+You probably need to get an updated matplotlibrc file from
+https://github.com/matplotlib/matplotlib/blob/v3.1.3/matplotlibrc.template
+or from the matplotlib source distribution
+/home/nudt_cleng/anaconda3/lib/python3.7/site-packages/scipy/stats/stats.py:3508: PearsonRConstantInputWarning: An input array is constant; the correlation coefficent is not defined.
+  warnings.warn(PearsonRConstantInputWarning())
+/home/nudt_cleng/anaconda3/lib/python3.7/site-packages/scipy/stats/stats.py:3508: PearsonRConstantInputWarning: An input array is constant; the correlation coefficent is not defined.
+  warnings.warn(PearsonRConstantInputWarning())
+
+r2: 0.2208
+pearson: 0.5030
+
+rf_output4 results:
+rmse: 0.9444
+mae: 0.7206
+r2: 0.3625
+pearson: 0.6104
+
+gradientboost_output1 results:
+rmse: 1.1802
+mae: 0.9397
+r2: 0.0045
+pearson: 0.0670
+
+gradientboost_output2 results:
+rmse: 0.9851
+mae: 0.7830
+r2: 0.3064
+pearson: 0.5802
+
+gradientboost_output3 results:
+rmse: 1.0077
+mae: 0.7989
+r2: 0.2742
+pearson: 0.5629
+
+gradientboost_output4 results:
+rmse: 0.9280
+mae: 0.7098
+r2: 0.3844
+pearson: 0.6332
+
+lasso ensemble results:
+Weights: [-0.          0.18922916  0.13669176  0.33518133]
+rmse: 1.0492
+mae: 0.8055
+r2: 0.2131
+pearson: 0.4619
+
+elastic ensemble results:
+Weights: [-0.          0.22792316  0.13632059  0.33093305]
+rmse: 1.0489
+mae: 0.8058
+r2: 0.2136
+pearson: 0.4623
+
+rf ensemble results:
+Weights: [0.00315246 0.20070469 0.20280978 0.59333307]
+rmse: 0.8583
+mae: 0.6673
+r2: 0.4734
+pearson: 0.7084
+
+gradientboost ensemble results:
+Weights: [1.86264716e-04 2.01068706e-01 2.25977657e-01 5.72767373e-01]
+rmse: 0.8547
+mae: 0.6595
+r2: 0.4778
+pearson: 0.7114
+
+Training and evaluation completed successfully!

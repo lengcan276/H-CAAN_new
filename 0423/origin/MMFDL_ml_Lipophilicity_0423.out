@@ -1,0 +1,294 @@
+QXcbConnection: Failed to initialize XRandr
+Qt: XKEYBOARD extension not present on the X server.
+No XVisualInfo for format QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::SwapBehavior(SingleBuffer), swapInterval 1, profile  QSurfaceFormat::OpenGLContextProfile(NoProfile))
+Falling back to using screens root_visual.
+No XVisualInfo for format QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::SwapBehavior(SingleBuffer), swapInterval 1, profile  QSurfaceFormat::OpenGLContextProfile(NoProfile))
+Falling back to using screens root_visual.
+No XVisualInfo for format QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::SwapBehavior(SingleBuffer), swapInterval 1, profile  QSurfaceFormat::OpenGLContextProfile(NoProfile))
+Falling back to using screens root_visual.
+No XVisualInfo for format QSurfaceFormat(version 2.0, options QFlags<QSurfaceFormat::FormatOption>(), depthBufferSize -1, redBufferSize 1, greenBufferSize 1, blueBufferSize 1, alphaBufferSize -1, stencilBufferSize -1, samples -1, swapBehavior QSurfaceFormat::SwapBehavior(SingleBuffer), swapInterval 1, profile  QSurfaceFormat::OpenGLContextProfile(NoProfile))
+Falling back to using screens root_visual.
+
+Bad key "text.kerning_factor" on line 4 in
+/home/nudt_cleng/anaconda3/lib/python3.7/site-packages/matplotlib/mpl-data/stylelib/_classic_test_patch.mplstyle.
+You probably need to get an updated matplotlibrc file from
+https://github.com/matplotlib/matplotlib/blob/v3.1.3/matplotlibrc.template
+or from the matplotlib source distribution
+Pre-processed data found: /home/nudt_cleng/ccleng/MMFDL-main/notebook/0423/origin/results/processed/Lipophilicity_dataTrain.pt, loading ...
+Pre-processed data found: /home/nudt_cleng/ccleng/MMFDL-main/notebook/0423/origin/results/processed/Lipophilicity_dataTest.pt, loading ...
+Running EPOCH 1
+train avg_loss is:  0.6310733505555851
+val avg_loss is:  0.4330846212035525
+
+
+Running EPOCH 2
+train avg_loss is:  0.37814231723179575
+val avg_loss is:  0.38108362452540046
+
+
+Running EPOCH 3
+train avg_loss is:  0.3441753442932597
+val avg_loss is:  0.3514446336276317
+
+
+Running EPOCH 4
+train avg_loss is:  0.3202647898346197
+val avg_loss is:  0.33436651838702436
+
+
+Running EPOCH 5
+train avg_loss is:  0.30627727878312744
+val avg_loss is:  0.3272203506044848
+
+
+Running EPOCH 6
+train avg_loss is:  0.29751269244637574
+val avg_loss is:  0.31514475525010605
+
+
+Running EPOCH 7
+train avg_loss is:  0.28482641416250887
+val avg_loss is:  0.29946746879973846
+
+
+Running EPOCH 8
+train avg_loss is:  0.2763355916815847
+val avg_loss is:  0.2956288845997032
+
+
+Running EPOCH 9
+train avg_loss is:  0.26783190698745346
+val avg_loss is:  0.2859770211497815
+
+
+Running EPOCH 10
+train avg_loss is:  0.2616866516333077
+val avg_loss is:  0.27202237168966703
+
+
+Running EPOCH 11
+train avg_loss is:  0.2543403244073763
+val avg_loss is:  0.26376879489291244
+
+
+Running EPOCH 12
+train avg_loss is:  0.24616198423603358
+val avg_loss is:  0.26436626849734296
+
+
+Running EPOCH 13
+train avg_loss is:  0.24040656938192914
+val avg_loss is:  0.25525039360363366
+
+
+Running EPOCH 14
+train avg_loss is:  0.23484366547000105
+val avg_loss is:  0.24944669091415733
+
+
+Running EPOCH 15
+train avg_loss is:  0.22829597782777392
+val avg_loss is:  0.244656045484137
+
+
+Running EPOCH 16
+train avg_loss is:  0.22506057081876815
+val avg_loss is:  0.24084664172284312
+
+
+Running EPOCH 17
+train avg_loss is:  0.21719008253409736
+val avg_loss is:  0.23489063600131305
+
+
+Running EPOCH 18
+train avg_loss is:  0.2156356272032476
+val avg_loss is:  0.22534097507197093
+
+
+Running EPOCH 19
+train avg_loss is:  0.2091407518259072
+val avg_loss is:  0.22146066861764113
+
+
+Running EPOCH 20
+train avg_loss is:  0.2044813700183218
+val avg_loss is:  0.21897151281862692
+
+
+Running EPOCH 21
+train avg_loss is:  0.19841783446555036
+val avg_loss is:  0.21683770529599472
+
+
+Running EPOCH 22
+train avg_loss is:  0.1985162084059558
+val avg_loss is:  0.2096540240651465
+
+
+Running EPOCH 23
+train avg_loss is:  0.19182938840682706
+val avg_loss is:  0.20558454694504963
+
+
+Running EPOCH 24
+train avg_loss is:  0.19194620165953177
+val avg_loss is:  0.20651537879217818
+
+
+Running EPOCH 25
+train avg_loss is:  0.18470850400278674
+val avg_loss is:  0.19917433220889266
+
+
+Running EPOCH 26
+train avg_loss is:  0.1807516880773352
+val avg_loss is:  0.19757455468142618
+
+
+Running EPOCH 27
+train avg_loss is:  0.17915226645998267
+val avg_loss is:  0.19392404824878845
+
+
+Running EPOCH 28
+train avg_loss is:  0.17740294861776568
+val avg_loss is:  0.19957485971632952
+
+
+Running EPOCH 29
+train avg_loss is:  0.1740124985458031
+val avg_loss is:  0.19157628688962416
+
+
+Running EPOCH 30
+train avg_loss is:  0.16936018906477215
+val avg_loss is:  0.18644456463936349
+
+
+Running EPOCH 31
+train avg_loss is:  0.17047501126796435
+val avg_loss is:  0.18609241347435276
+
+
+Running EPOCH 32
+train avg_loss is:  0.16661157130636042
+val avg_loss is:  0.18522067787120014
+
+
+Running EPOCH 33
+train avg_loss is:  0.16443204615345625
+val avg_loss is:  0.18203440606739849
+
+
+Running EPOCH 34
+train avg_loss is:  0.16214432954792216
+val avg_loss is:  0.18651049988816237
+
+
+Running EPOCH 35
+train avg_loss is:  0.1606750793377814
+val avg_loss is:  0.1762370786960649
+
+
+Running EPOCH 36
+train avg_loss is:  0.15923657563434643
+val avg_loss is:  0.17959195093129918
+
+
+Running EPOCH 37
+train avg_loss is:  0.15772161534698464
+val avg_loss is:  0.17030385476248797
+
+
+Running EPOCH 38
+train avg_loss is:  0.15398545785858309
+val avg_loss is:  0.17413298498702035
+
+
+Running EPOCH 39
+train avg_loss is:  0.15474263040757166
+val avg_loss is:  0.17041248745783616
+
+
+Running EPOCH 40
+train avg_loss is:  0.15041707394956705
+val avg_loss is:  0.1652917317617149
+
+
+Running EPOCH 41
+train avg_loss is:  0.14961592365646031
+val avg_loss is:  0.1642660666788027
+
+
+Running EPOCH 42
+train avg_loss is:  0.147340583250007
+val avg_loss is:  0.16312780861623866
+
+
+Running EPOCH 43
+train avg_loss is:  0.14892849926984028
+val avg_loss is:  0.1577514925025994
+
+
+Running EPOCH 44
+train avg_loss is:  0.14600603710676954
+val avg_loss is:  0.16257066477544416
+
+
+Running EPOCH 45
+train avg_loss is:  0.14602765231796286
+val avg_loss is:  0.15594046136844572
+
+
+Running EPOCH 46
+train avg_loss is:  0.14152634946602485
+val avg_loss is:  0.16237805862373123
+
+
+Running EPOCH 47
+train avg_loss is:  0.14271018097697044
+val avg_loss is:  0.15230691497265142
+
+
+Running EPOCH 48
+train avg_loss is:  0.13818619675108298
+val avg_loss is:  0.15173664932127337
+
+
+Running EPOCH 49
+train avg_loss is:  0.13620455229985395
+val avg_loss is:  0.14781893505216406
+
+
+Running EPOCH 50
+train avg_loss is:  0.13895021064303154
+val avg_loss is:  0.1503423787935778
+
+
+Lasso Weights: [0.00946342 0.92386998 0.        ]
+elastic weight: [0.24018786 0.51581781 0.        ]
+RF weight: [0.00402666 0.99212366 0.00384968]
+gradientboost_weights: [5.26424013e-03 9.94539798e-01 1.95962369e-04]
+{'lasso': {'rmse': 0.8405308153890633, 'mae': 0.6268052601587816}, 'leastic': {'rmse': 0.9218818675350202, 'mae': 0.7531008335284783}, 'rf': {'rmse': 0.8481952576469978, 'mae': 0.6165318142592829}, 'gradientBoost': {'rmse': 0.8492316494038182, 'mae': 0.6173162680177438}}
+Tri_LASSO
+pearson:  (0.7057600624167855, 2.237214069282808e-90)
+0.5718461121912191 0.705760062416785
+Tri_Elastic
+pearson:  (0.748058263384897, 3.7961706599891346e-107)
+0.44932147237682474 0.7480582633848966
+Tri_RF
+pearson:  (0.7053074318685622, 3.257727290890552e-90)
+0.6124150883021905 0.7053074318685619
+Tri_GB
+pearson:  (0.7048298772511503, 4.839178701426216e-90)
+0.6129504983718251 0.7048298772511505
+
+
+./results/ML/10000-result-16-50-42-lasso-com.csv	saved successfully
+./results/ML/10000-result-16-50-42-elastic-com.csv	saved successfully
+./results/ML/10000-result-16-50-42-rf-com.csv	saved successfully
+./results/ML/10000-result-16-50-42-gradient-com.csv	saved successfully
+
+
+./results/ML/10000_validation_16_50_42_data.csv	save succeed!

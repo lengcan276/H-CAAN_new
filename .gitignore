@@ -1,0 +1,26 @@
+# 大型模型文件 - 绝对路径
+0423/best_model_10000.pth
+0423/Model/pre-trained/pytorch_model.bin
+0423/results/processed/processed/Lipophilicity_MFBERT_dataTrain.pt
+
+# 大型模型文件 - 模式匹配
+*.pth
+*.bin
+*.pt
+
+# 通用Python排除项
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+.idea/
+.vscode/
+*.so
+.DS_Store
+*.log
+tmp/
+temp/
