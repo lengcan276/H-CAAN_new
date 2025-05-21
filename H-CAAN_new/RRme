@@ -1,0 +1,196 @@
+# H-CAAN: Hierarchical Cross-modal Adaptive Attention Network
+
+H-CAAN is a state-of-the-art multi-modal deep learning framework for enhanced drug property prediction, utilizing a hierarchical fusion approach that combines multiple molecular representations.
+
+## Key Features
+
+- **Multi-modal Learning**: Integrates chemical language (SMILES, ECFP), molecular graphs, and pre-trained embeddings (MFBERT)
+- **Hierarchical Fusion**: Fusion at feature, semantic, and decision levels
+- **Chemical-Aware Attention**: Specialized attention mechanisms that focus on chemically relevant substructures
+- **Dynamic Modality Importance**: Adapts to molecular complexity and task requirements
+- **Multi-agent Research Pipeline**: End-to-end pipeline from data preparation to paper generation
+
+## Architecture Overview
+
+![H-CAAN Architecture](architecture.png)
+
+The H-CAAN architecture consists of several key components:
+
+1. **Multi-modal Encoders**: 
+   - SMILES Encoder (Transformer-based)
+   - ECFP Encoder (BiGRU-based)
+   - Graph Encoder (GCN-based)
+   - MFBERT Encoder (optional)
+
+2. **Hierarchical Fusion**:
+   - Low-level feature fusion with Gated Cross-modal Attention Units (GCAU)
+   - Mid-level semantic fusion with contrastive learning
+   - High-level decision fusion with adaptive weighting
+
+3. **Modal Importance Assessment**:
+   - Task-specific weight generation
+   - Molecular complexity assessment
+   - Uncertainty estimation with Bayesian methods
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/H-CAAN.git
+cd H-CAAN
+
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+## Getting Started
+
+To prepare the environment:
+
+```bash
+python main.py --prepare
+```
+
+To launch the Streamlit interface:
+
+```bash
+python main.py --streamlit
+```
+
+To train the model from the command line:
+
+```bash
+python main.py --train --dataset "Delaney (ESOL)" --batch-size 64 --epochs 100
+```
+
+## Multi-agent Research Pipeline
+
+H-CAAN includes a multi-agent system using LangChain that automates the research workflow:
+
+1. **Data Agent**: Processes molecular datasets, generates features, and analyzes chemical space
+2. **Model Agent**: Configures the H-CAAN architecture, trains models, and runs ablation studies
+3. **Evaluation Agent**: Evaluates results, generates visualizations, and provides interpretable analysis
+4. **Writing Agent**: Automatically generates research paper drafts based on results
+
+## Usage Examples
+
+### Basic Model Training
+
+```python
+from agents.agent_manager import AgentManager
+
+# Initialize agents
+agent_manager = AgentManager()
+
+# Process dataset
+data_agent = agent_manager.get_agent("data")
+data_results = data_agent.process_dataset("Delaney (ESOL)")
+
+# Configure and train model
+model_agent = agent_manager.get_agent("model")
+model_config = {
+    "smiles_encoder": {"hidden_dim": 256, "num_layers": 3},
+    "fusion": {"levels": ["Low-level (Feature)", "Mid-level (Semantic)", "High-level (Decision)"]}
+}
+model_summary = model_agent.configure_model(model_config)
+training_results = model_agent.train_model({"batch_size": 64, "epochs": 100})
+
+# Evaluate results
+evaluation_agent = agent_manager.get_agent("evaluation")
+evaluation_results = evaluation_agent.evaluate_results(training_results, model_config)
+
+# Generate paper
+writing_agent = agent_manager.get_agent("writing")
+paper = writing_agent.generate_paper()
+```
+
+### Using the Streamlit Interface
+
+The Streamlit interface provides a user-friendly way to interact with the H-CAAN framework:
+
+1. **Setup**: Initialize the agent system
+2. **Data Preparation**: Select and process molecular datasets
+3. **Model Configuration**: Configure the H-CAAN architecture
+4. **Training & Evaluation**: Train models and perform ablation studies
+5. **Results Analysis**: Visualize and interpret results
+6. **Paper Generation**: Automatically generate research paper drafts
+
+## Datasets
+
+H-CAAN comes with support for several benchmark datasets:
+
+- **Delaney (ESOL)**: Aqueous solubility
+- **Lipophilicity**: Octanol/water distribution coefficient
+- **BACE**: β-secretase inhibition
+- **BBBP**: Blood-brain barrier penetration
+- **ClinTox**: Clinical toxicity
+- **HIV**: HIV replication inhibition
+- **SIDER**: Side effect prediction
+
+Custom datasets in CSV or SDF format are also supported.
+
+## Model Configuration Options
+
+H-CAAN provides extensive configuration options:
+
+```python
+model_config = {
+    "smiles_encoder": {
+        "hidden_dim": 256,     # Hidden dimension for SMILES encoder
+        "num_layers": 3,       # Number of transformer layers
+        "num_heads": 8         # Number of attention heads
+    },
+    "ecfp_encoder": {
+        "hidden_dim": 256,     # Hidden dimension for ECFP encoder
+        "num_layers": 2        # Number of BiGRU layers
+    },
+    "gcn_encoder": {
+        "hidden_dim": 256,     # Hidden dimension for GCN encoder
+        "num_layers": 3        # Number of GCN layers
+    },
+    "mfbert_encoder": {
+        "use_mfbert": True,    # Whether to use MFBERT
+        "hidden_dim": 512      # Hidden dimension for MFBERT encoder
+    },
+    "fusion": {
+        "levels": ["Low-level (Feature)", "Mid-level (Semantic)", "High-level (Decision)"],
+        "use_chemical_aware": True,   # Use chemical-aware attention
+        "use_adaptive_gating": True,  # Use adaptive gating
+        "use_multi_scale": True       # Use multi-scale attention
+    },
+    "modal_importance": {
+        "use_task_specific": True,     # Use task-specific weights
+        "use_complexity_aware": True,  # Use complexity-aware selection
+        "use_uncertainty": True        # Use uncertainty estimation
+    }
+}
+```
+
+## Citing H-CAAN
+
+If you use H-CAAN in your research, please cite our paper:
+
+```
+@article{author2025hcaan,
+  title={H-CAAN: Hierarchical Cross-modal Adaptive Attention Network for Enhanced Drug Property Prediction},
+  author={Author, First and Author, Second and Author, Third},
+  journal={Journal Name},
+  year={2025},
+  volume={},
+  pages={}
+}
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- MMFDL and MFBERT repositories for inspiring parts of our work
+- MoleculeNet for providing benchmark datasets
+- LangChain for the multi-agent framework

@@ -1,0 +1,100 @@
+# H-CAAN: Hierarchical Cross-modal Adaptive Attention Network
+
+## Project Structure
+```
+H-CAAN/
+├── config/
+│   └── model_config.py          # Configuration settings for models
+├── data/
+│   ├── data_loaders.py          # Data loading utilities
+│   └── dataset_processors.py    # Dataset preprocessing utilities
+├── models/
+│   ├── base_models.py           # Base model components
+│   ├── encoders/
+│   │   ├── smiles_encoder.py    # Enhanced Transformer-Encoder for SMILES
+│   │   ├── ecfp_encoder.py      # BiGRU network for ECFP
+│   │   ├── gcn_encoder.py       # Enhanced GCN for molecular graphs
+│   │   └── mfbert_encoder.py    # Fine-tuned MFBERT encoder
+│   ├── fusion/
+│   │   ├── gcau.py              # Gated Cross-modal Attention Unit
+│   │   ├── hierarchical_fusion.py # Hierarchical fusion strategies
+│   │   └── contrastive_learning.py # Cross-modal contrastive learning
+│   ├── attention/
+│   │   ├── chemical_aware_attention.py # Chemical-aware attention
+│   │   ├── adaptive_gating.py   # Adaptive gating mechanisms
+│   │   └── multi_scale_attention.py # Multi-scale attention
+│   ├── modal_importance/
+│   │   ├── task_specific_weights.py # Task-specific weight generation
+│   │   ├── complexity_aware.py  # Molecular complexity assessment
+│   │   └── uncertainty_estimation.py # Bayesian uncertainty estimation
+│   └── hierarchical_model.py    # Main H-CAAN model 
+├── training/
+│   ├── trainer.py               # Training pipeline
+│   ├── losses.py                # Custom loss functions
+│   └── optimizers.py            # Optimizers and schedulers
+├── evaluation/
+│   ├── metrics.py               # Evaluation metrics
+│   ├── ablation_study.py        # Ablation study utilities
+│   └── visualization.py         # Visualization utilities
+├── utils/
+│   ├── molecular_utils.py       # Molecular processing utilities
+│   ├── information_theory.py    # Information theory tools
+│   └── chemical_space.py        # Chemical space mapping tools
+├── agents/
+│   ├── agent_manager.py         # Agent orchestration
+│   ├── research_agent.py        # Literature search and analysis
+│   ├── data_agent.py            # Data preprocessing and analysis
+│   ├── model_agent.py           # Model architecture and training
+│   ├── evaluation_agent.py      # Results analysis and visualization
+│   └── writing_agent.py         # Paper generation
+├── streamlit/
+│   ├── app.py                   # Main Streamlit application
+│   ├── pages/
+│   │   ├── data_page.py         # Data preparation page
+│   │   ├── model_page.py        # Model configuration page
+│   │   ├── training_page.py     # Training and evaluation page
+│   │   ├── results_page.py      # Results visualization page
+│   │   └── paper_page.py        # Paper generation page
+│   └── components/              # Reusable UI components
+└── main.py                      # Main script to run the model
+```
+
+## Key Innovation Points
+
+1. **Multi-modal Fusion and Adaptive Attention Mechanism**
+   - Integration of GNN, attention mechanisms, and molecular language models
+   - Hierarchical cross-modal attention with gated information flow
+   - Dynamic adaptation to molecular complexity and task requirements
+
+2. **Hierarchical Interactive Attention**
+   - Low-level chemical-aware attention mapping
+   - Mid-level contrastive learning enhancement
+   - High-level semantic integration with multi-granularity attention
+
+3. **Dynamic Modal Importance Assessment**
+   - Task-specific weight generation
+   - Molecular complexity-aware modality selection
+   - Uncertainty-aware fusion with Bayesian estimation
+
+4. **Hierarchical Ensemble Decision Module**
+   - Multi-granularity feature aggregation with feature pyramids
+   - Expert mixture system with specialized prediction heads
+   - Self-calibrating prediction mechanisms
+
+5. **Chemical Information Theory Framework**
+   - Information entropy analysis for chemical structure representation
+   - Mutual information measurement between modalities
+   - Chemical space coverage mapping and visualization
+
+6. **Multi-Agent Research Pipeline**
+   - Integration with LangChain for orchestrating research workflow
+   - Autonomous agents for data processing, model training, and paper writing
+   - End-to-end research pipeline with minimal human intervention
+
+## Technology Stack
+
+- **Core ML Libraries**: PyTorch, PyTorch Geometric, RDKit, Transformers
+- **LLM Integration**: LangChain, OpenAI API
+- **Data Processing**: Pandas, NumPy, SciPy
+- **Visualization**: Matplotlib, Plotly, Streamlit
+- **Evaluation**: Scikit-learn, TorchMetrics
