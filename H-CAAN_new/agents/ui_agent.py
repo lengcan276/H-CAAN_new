@@ -25,12 +25,6 @@ class UIAgent:
     def handle_user_input(self, user_input: Dict) -> Any:
         """
         处理前端用户输入
-        
-        Args:
-            user_input: 包含用户操作和参数的字典
-            
-        Returns:
-            返回给前端的结果或状态
         """
         action = user_input.get('action')
         params = user_input.get('params', {})
@@ -40,10 +34,13 @@ class UIAgent:
         try:
             if action == 'upload_data':
                 return self._handle_data_upload(params)
+            
+            elif action == 'preprocess_data':  # 添加这个分支
+                return self._handle_preprocess_data(params)
                 
             elif action == 'start_training':
                 return self._handle_training(params)
-                
+                    
             elif action == 'run_prediction':
                 return self._handle_prediction(params)
                 
@@ -103,10 +100,60 @@ class UIAgent:
         # 生成预览数据
         preview = self._generate_data_preview(result)
         
+        # 自动进行预处理和数据划分
+        preprocess_result = self._handle_preprocess_data({'raw_data': result})
+        
         return {
             'status': 'success',
-            'message': f'成功加载 {len(result.get("molecules", []))} 个分子',
-            'preview': preview
+            'message': f'成功加载 {len(result.get("molecules", []))} 个分子，并完成数据预处理',
+            'preview': preview,
+            'preprocess_result': preprocess_result
+        }
+    def _handle_preprocess_data(self, params: Dict) -> Dict:
+        """处理数据预处理任务"""
+        # 获取原始数据（可以从params传入或从session_data获取）
+        raw_data = params.get('raw_data') or self.session_data.get('raw_data')
+        
+        if not raw_data:
+            return {'status': 'error', 'message': '未找到原始数据，请先上传数据'}
+        
+        # 调用数据智能体进行预处理
+        processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
+        
+        # 从session中获取训练集比例设置
+        train_ratio = st.session_state.get('train_ratio', 0.8)
+        
+        # 计算验证集和测试集比例
+        remaining = 1.0 - train_ratio
+        val_ratio = remaining * 0.5  # 剩余部分平分给验证集和测试集
+        test_ratio = remaining * 0.5
+        
+        # 执行数据集划分
+        split_data = self.manager.dispatch_task('split_data',
+            processed_data=processed_data,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio
+        )
+        
+        # 保存到session_data
+        self.session_data['split_data'] = split_data
+        self.session_data['processed_data'] = processed_data
+        
+        # 同时保存到streamlit session_state
+        if 'st' in globals():
+            st.session_state['split_data'] = split_data
+            st.session_state['data_preprocessed'] = True
+        
+        return {
+            'status': 'success',
+            'message': f'数据预处理完成，已划分为训练集({train_ratio:.0%})、'
+                    f'验证集({val_ratio:.0%})、测试集({test_ratio:.0%})',
+            'split_info': {
+                'train_samples': len(split_data['train']['fingerprints']),
+                'val_samples': len(split_data['val']['fingerprints']),
+                'test_samples': len(split_data['test']['fingerprints'])
+            }
         }
         
     def _handle_training(self, params: Dict) -> Dict:
@@ -151,12 +198,31 @@ class UIAgent:
     def _handle_report_generation(self, params: Dict) -> Dict:
         """处理报告生成"""
         model_path = params.get('model_path')
-        features = self.session_data.get('fused_features')
+        
+        # 检查模型路径
+        if not model_path:
+            return {'status': 'error', 'message': '模型路径未提供'}
+        
+        # 获取特征数据
+        features = params.get('fused_features')
+        if features is None:
+            # 尝试从session_data获取
+            features = self.session_data.get('fused_features')
+            if features is None and 'split_data' in self.session_data:
+                # 使用测试集特征
+                features = self.session_data['split_data']['test']['fingerprints']
+        
+        if features is None:
+            return {'status': 'error', 'message': '未找到特征数据'}
+        
+        # 转换为numpy数组
+        if not isinstance(features, np.ndarray):
+            features = np.array(features)
         
         # 生成解释报告
         explanation = self.manager.dispatch_task('explain',
-                                               model_path=model_path,
-                                               fused_features=features)
+                                            model_path=model_path,
+                                            fused_features=features)
         
         return {
             'status': 'success',

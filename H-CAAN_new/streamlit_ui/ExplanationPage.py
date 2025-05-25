@@ -47,11 +47,28 @@ def show_explanation_page():
     if st.session_state.get('model_trained', False):
         # 生成解释报告
         if st.button("🔍 生成解释报告"):
+            # 检查必要的数据
+            if 'model_path' not in st.session_state:
+                st.error("❌ 未找到训练好的模型，请先训练模型")
+                return
+            
+            if 'fused_features' not in st.session_state and 'split_data' not in st.session_state:
+                st.error("❌ 未找到特征数据，请先完成特征融合")
+                return
+            
             with st.spinner("正在生成解释报告..."):
+                # 获取融合特征
+                if 'fused_features' in st.session_state:
+                    features = st.session_state.fused_features
+                else:
+                    # 从split_data中提取特征
+                    features = st.session_state.split_data['test']['fingerprints']
+                
                 result = ui_agent.handle_user_input({
                     'action': 'generate_report',
                     'params': {
-                        'model_path': st.session_state.get('model_path'),
+                        'model_path': st.session_state.model_path,
+                        'fused_features': features,
                         'explanation_methods': explanation_methods
                     }
                 })

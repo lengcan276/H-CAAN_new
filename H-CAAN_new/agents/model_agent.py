@@ -47,6 +47,30 @@ class EnsembleModel:
         # 在全量数据上重新训练
         for name, model in self.models.items():
             model.fit(X, y)
+
+    def fit_with_validation(self, X_train, y_train, X_val, y_val):
+        """使用提供的训练集和验证集训练模型"""
+        predictions = []
+        
+        # 在训练集上训练每个基模型
+        for name, model in self.models.items():
+            logger.info(f"训练 {name} 模型...")
+            model.fit(X_train, y_train)
+            
+            # 在验证集上评估
+            pred_val = model.predict(X_val)
+            predictions.append(pred_val)
+            
+            # 计算验证集性能
+            val_mse = np.mean((pred_val - y_val)**2)
+            logger.info(f"{name} 验证集MSE: {val_mse:.4f}")
+        
+        # 使用验证集预测结果计算最优权重
+        predictions = np.array(predictions).T
+        self.weights = self._optimize_weights(predictions, y_val)
+        self.is_trained = True
+        
+        logger.info(f"模型权重: RF={self.weights[0]:.3f}, GBM={self.weights[1]:.3f}, GPR={self.weights[2]:.3f}")
             
     def predict(self, X):
         """集成预测"""
@@ -118,14 +142,12 @@ class ModelAgent:
         self.model_path = None
         self.training_history = []
         
-    def train_model(self, fused_features: np.ndarray, labels: np.ndarray, 
-                   train_params: Dict) -> str:
+    def train_model(self, split_data: Dict, train_params: Dict) -> str:
         """
         训练集成模型
         
         Args:
-            fused_features: 融合特征向量
-            labels: 目标值
+            split_data: 包含train/val/test的划分数据
             train_params: 训练参数
             
         Returns:
@@ -133,25 +155,59 @@ class ModelAgent:
         """
         logger.info("开始训练模型...")
         
-        # 数据检查
-        if len(fused_features) != len(labels):
-            raise ValueError("特征和标签数量不匹配")
-            
-        # 训练模型
-        self.model.fit(fused_features, labels)
+        # 提取目标属性名称
+        target_property = train_params.get('target_property', 'target')
+        
+        # 提取训练集和验证集数据
+        # 使用融合特征或指纹特征
+        feature_type = train_params.get('feature_type', 'fingerprints')
+        
+        X_train = np.array(split_data['train'][feature_type])
+        y_train = np.array(split_data['train']['labels'][target_property])
+        
+        X_val = np.array(split_data['val'][feature_type])
+        y_val = np.array(split_data['val']['labels'][target_property])
+        
+        logger.info(f"训练集大小: {len(X_train)}, 验证集大小: {len(X_val)}")
+        
+        # 使用已经划分好的数据训练
+        self.model.fit_with_validation(X_train, y_train, X_val, y_val)
+        
+        # 在测试集上评估
+        X_test = np.array(split_data['test'][feature_type])
+        y_test = np.array(split_data['test']['labels'][target_property])
+        
+        predictions_test, _ = self.model.predict_with_uncertainty(X_test)
+        test_metrics = self.evaluate_model(predictions_test, y_test)
+        
+        logger.info(f"测试集性能: {test_metrics}")
         
         # 保存模型
         model_dir = train_params.get('model_dir', 'data/models')
         os.makedirs(model_dir, exist_ok=True)
         
         model_path = os.path.join(model_dir, f"ensemble_model_{train_params.get('task_name', 'default')}.pkl")
-        joblib.dump(self.model, model_path)
+        
+        # 保存模型和相关信息
+        model_info = {
+            'model': self.model,
+            'test_metrics': test_metrics,
+            'train_params': train_params,
+            'data_split': split_data.get('ratios', {}),
+            'n_train': len(X_train),
+            'n_val': len(X_val),
+            'n_test': len(X_test)
+        }
+        
+        joblib.dump(model_info, model_path)
         self.model_path = model_path
         
         # 记录训练历史
+        import pandas as pd  # 添加这个导入
         self.training_history.append({
             'timestamp': pd.Timestamp.now(),
-            'n_samples': len(labels),
+            'n_samples': {'train': len(X_train), 'val': len(X_val), 'test': len(X_test)},
+            'test_metrics': test_metrics,
             'params': train_params,
             'model_path': model_path
         })
@@ -172,8 +228,15 @@ class ModelAgent:
         """
         logger.info(f"加载模型: {model_path}")
         
-        # 加载模型
-        model = joblib.load(model_path)
+        # 加载模型信息
+        model_info = joblib.load(model_path)
+        
+        # 兼容旧版本和新版本
+        if isinstance(model_info, dict):
+            model = model_info['model']
+            logger.info(f"加载的模型测试集性能: {model_info.get('test_metrics', {})}")
+        else:
+            model = model_info
         
         # 预测
         predictions, uncertainties = model.predict_with_uncertainty(fused_features)

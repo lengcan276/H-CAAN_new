@@ -226,3 +226,81 @@ class DataAgent:
             data['molecular_descriptors'] = ((descriptors - mean) / std).tolist()
             
         return data
+    
+    def split_data(self, processed_data: Dict, train_ratio: float = 0.6, 
+               val_ratio: float = 0.2, test_ratio: float = 0.2, 
+               random_state: int = 42) -> Dict:
+        """
+        将数据划分为训练集、验证集和测试集
+        
+        Args:
+            processed_data: 预处理后的数据
+            train_ratio: 训练集比例
+            val_ratio: 验证集比例  
+            test_ratio: 测试集比例
+            random_state: 随机种子
+            
+        Returns:
+            包含训练集、验证集、测试集的字典
+        """
+        # 确保比例之和为1
+        assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6, \
+            "训练集、验证集、测试集比例之和必须为1"
+        
+        # 获取样本数量
+        n_samples = len(processed_data['fingerprints'])
+        indices = np.arange(n_samples)
+        
+        # 设置随机种子
+        np.random.seed(random_state)
+        np.random.shuffle(indices)
+        
+        # 计算划分点
+        train_end = int(n_samples * train_ratio)
+        val_end = int(n_samples * (train_ratio + val_ratio))
+        
+        # 划分索引
+        train_indices = indices[:train_end]
+        val_indices = indices[train_end:val_end]
+        test_indices = indices[val_end:]
+        
+        # 划分数据
+        split_data = {
+            'train': self._extract_subset(processed_data, train_indices),
+            'val': self._extract_subset(processed_data, val_indices),
+            'test': self._extract_subset(processed_data, test_indices),
+            'indices': {
+                'train': train_indices.tolist(),
+                'val': val_indices.tolist(),
+                'test': test_indices.tolist()
+            },
+            'ratios': {
+                'train': train_ratio,
+                'val': val_ratio,
+                'test': test_ratio
+            }
+        }
+        
+        logger.info(f"数据集划分完成: 训练集 {len(train_indices)} 样本, "
+                    f"验证集 {len(val_indices)} 样本, "
+                    f"测试集 {len(test_indices)} 样本")
+        
+        return split_data
+
+    def _extract_subset(self, data: Dict, indices: np.ndarray) -> Dict:
+        """提取数据子集"""
+        subset = {}
+        
+        # 处理列表类型的数据
+        for key in ['smiles_features', 'graph_features', 'fingerprints', 
+                    'molecular_descriptors', 'structure_info', 'complexity_scores']:
+            if key in data and data[key]:
+                subset[key] = [data[key][i] for i in indices]
+        
+        # 处理标签数据
+        if 'labels' in data:
+            subset['labels'] = {}
+            for label_name, label_values in data['labels'].items():
+                subset['labels'][label_name] = [label_values[i] for i in indices]
+        
+        return subset

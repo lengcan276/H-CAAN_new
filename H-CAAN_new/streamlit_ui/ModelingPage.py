@@ -27,15 +27,72 @@ def show_modeling_page():
     
     # 训练配置
     with st.expander("⚙️ 训练配置", expanded=True):
+        # 添加数据集信息显示
+        if 'uploaded_data' in st.session_state and 'current_file' in st.session_state:
+            st.info(f"📊 当前数据集: **{st.session_state.current_file}**")
+            
+            # 显示数据集统计信息
+            preview_data = st.session_state.uploaded_data.get('preview', {})
+            col_info1, col_info2, col_info3 = st.columns(3)
+            
+            with col_info1:
+                n_molecules = preview_data.get('n_molecules', 'Unknown')
+                st.metric("分子数量", n_molecules)
+            
+            with col_info2:
+                properties = preview_data.get('properties', [])
+                if properties:
+                    st.metric("属性数量", len(properties))
+                else:
+                    st.metric("属性数量", "0")
+            
+            with col_info3:
+                if properties:
+                    st.metric("可用属性", ', '.join(properties[:3]))
+                else:
+                    st.metric("可用属性", "无")
+            
+            st.markdown("---")
+        
         col1, col2, col3 = st.columns(3)
         
         with col1:
             if 'uploaded_data' in st.session_state:
                 st.success("✅ 数据已加载")
-                target_property = st.selectbox("目标属性", ["溶解度", "毒性", "活性"])
+                
+                # 根据加载的数据动态生成目标属性选项
+                preview_data = st.session_state.uploaded_data.get('preview', {})
+                available_properties = preview_data.get('properties', [])
+                
+                # 默认属性选项
+                default_properties = ["溶解度", "毒性", "活性"]
+                
+                # 如果数据中有实际的属性列，使用实际的属性
+                if available_properties:
+                    # 过滤掉一些非目标属性的列（如SMILES、molecular_weight等）
+                    target_properties = [prop for prop in available_properties 
+                                       if prop.lower() not in ['smiles', 'molecular_weight', 'id', 'name']]
+                    if target_properties:
+                        target_property = st.selectbox("目标属性", target_properties)
+                    else:
+                        target_property = st.selectbox("目标属性", default_properties)
+                else:
+                    target_property = st.selectbox("目标属性", default_properties)
+                
                 train_ratio = st.slider("训练集比例", 0.5, 0.9, 0.8, 0.05)
+                # 保存到session_state
+                st.session_state.train_ratio = train_ratio
+                
+                # 显示数据集划分信息
+                remaining = 1.0 - train_ratio
+                val_ratio = remaining * 0.5
+                test_ratio = remaining * 0.5
+                
+                st.info(f"数据集划分: 训练集 {train_ratio:.0%} | "
+                        f"验证集 {val_ratio:.0%} | 测试集 {test_ratio:.0%}")
             else:
                 st.warning("请先上传数据")
+                st.markdown("👉 请前往 [数据管理页面](/数据管理) 上传数据")
         
         with col2:
             model_type = st.selectbox(
@@ -78,14 +135,23 @@ def show_training_tab(ui_agent):
             "数据已加载": 'uploaded_data' in st.session_state,
             "特征已融合": st.session_state.get('fusion_completed', False),
             "参数已配置": True,
-            "GPU可用": False
+            "GPU可用": True  # 允许CPU训练
         }
         
+        # 显示详细的检查信息
         for check, status in checks.items():
             if status:
-                st.success(f"✅ {check}")
+                if check == "数据已加载" and 'current_file' in st.session_state:
+                    st.success(f"✅ {check} ({st.session_state.current_file})")
+                else:
+                    st.success(f"✅ {check}")
             else:
-                st.warning(f"⚠️ {check}")
+                if check == "数据已加载":
+                    st.warning(f"⚠️ {check} - 请先在数据管理页面上传数据")
+                elif check == "特征已融合":
+                    st.warning(f"⚠️ {check} - 请先在特征融合页面执行融合")
+                else:
+                    st.warning(f"⚠️ {check}")
         
         all_ready = all(checks.values())
     
@@ -98,13 +164,16 @@ def show_training_tab(ui_agent):
             
             # 调用训练
             with st.spinner("正在准备训练..."):
+                # 使用实际加载的数据路径
+                data_path = os.path.join('data/raw', st.session_state.get('current_file', 'example_solubility.csv'))
+                
                 result = ui_agent.handle_user_input({
                     'action': 'start_training',
                     'params': {
-                        'data_path': 'data/raw/example_solubility.csv',
+                        'data_path': data_path,
                         'labels': np.random.rand(100),
                         'train_params': {
-                            'task_name': 'solubility',
+                            'task_name': st.session_state.get('current_file', 'default').split('.')[0],
                             'learning_rate': 0.001,
                             'batch_size': 32,
                             'epochs': 100

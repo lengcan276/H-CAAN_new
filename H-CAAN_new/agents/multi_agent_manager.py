@@ -44,6 +44,7 @@ class MultiAgentManager:
         self.task_mapping = {
             'load_data': self._handle_load_data,
             'preprocess_data': self._handle_preprocess_data,
+            'split_data': self._handle_split_data,  
             'fuse_features': self._handle_fuse_features,
             'train_model': self._handle_train_model,
             'predict': self._handle_predict,
@@ -54,17 +55,17 @@ class MultiAgentManager:
         # 工作流定义
         self.workflows = {
             'full_pipeline': [
-                'load_data', 'preprocess_data', 'fuse_features',
+                'load_data', 'preprocess_data', 'split_data', 'fuse_features',
                 'train_model', 'explain', 'generate_paper'
             ],
             'prediction_only': [
-                'load_data', 'preprocess_data', 'fuse_features', 'predict'
+                'load_data', 'preprocess_data', 'split_data', 'fuse_features', 'predict'
             ],
             'analysis_only': [
                 'load_data', 'preprocess_data', 'explain'
             ]
         }
-        
+                
     def dispatch_task(self, task_name: str, **kwargs) -> Any:
         """
         分发单个任务
@@ -101,7 +102,12 @@ class MultiAgentManager:
             logger.error(f"任务 {task_id} 失败: {str(e)}")
             self.task_status[task_id] = 'failed'
             raise
-            
+    def _handle_split_data(self, processed_data: Dict, train_ratio: float, 
+                        val_ratio: float, test_ratio: float) -> Dict:
+        """处理数据集划分任务"""
+        return self.agents['data'].split_data(
+            processed_data, train_ratio, val_ratio, test_ratio
+        )        
     def manage_workflow(self, workflow_name: str, input_data: Dict) -> Any:
         """
         管理工作流执行
@@ -180,10 +186,10 @@ class MultiAgentManager:
         """处理特征融合任务"""
         return self.agents['fusion'].fuse_features(processed_data)
         
-    def _handle_train_model(self, fused_features: np.ndarray, 
-                           labels: np.ndarray, train_params: Dict) -> str:
+    
+    def _handle_train_model(self, split_data: Dict, train_params: Dict) -> str:
         """处理模型训练任务"""
-        return self.agents['model'].train_model(fused_features, labels, train_params)
+        return self.agents['model'].train_model(split_data, train_params)
         
     def _handle_predict(self, model_path: str, fused_features: np.ndarray) -> Tuple:
         """处理预测任务"""
@@ -214,13 +220,20 @@ class MultiAgentManager:
             
         elif task_name == 'fuse_features':
             params['processed_data'] = previous_results.get('preprocess_data', 
+        
+        elif task_name == 'split_data':
+            params['processed_data'] = previous_results.get('preprocess_data', 
                                                           current_data.get('processed_data'))
+            params['train_ratio'] = current_data.get('train_ratio', 0.8)
+            params['val_ratio'] = current_data.get('val_ratio', 0.1)
+            params['test_ratio'] = current_data.get('test_ratio', 0.1)
             
         elif task_name == 'train_model':
-            params['fused_features'] = previous_results.get('fuse_features',
-                                                          current_data.get('fused_features'))
-            params['labels'] = current_data.get('labels')
-            params['train_params'] = current_data.get('train_params', {})
+            # 使用划分后的数据
+            params['split_data'] = previous_results.get('split_data') or \
+                                  current_data.get('split_data')
+            params['train_params'] = current_data.get('train_params', {})                                                  current_data.get('processed_data'))
+            
             
         elif task_name == 'predict':
             params['model_path'] = current_data.get('model_path')
@@ -279,3 +292,9 @@ class MultiAgentManager:
             
         self.task_status = state.get('task_status', {})
         logger.info(f"加载状态: {filepath}")
+
+    def _handle_preprocess_data(self, raw_data: Dict) -> Dict:
+        """处理数据预处理任务"""
+        return self.agents['data'].preprocess_data(raw_data)
+
+  
