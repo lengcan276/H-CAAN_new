@@ -202,8 +202,17 @@ class ModelAgent:
         joblib.dump(model_info, model_path)
         self.model_path = model_path
         
+        # 添加验证 - 确保文件确实被保存了
+        if not os.path.exists(model_path):
+            logger.error(f"模型保存失败: {model_path}")
+            raise Exception(f"模型文件未成功保存到: {model_path}")
+        else:
+            # 验证文件大小
+            file_size = os.path.getsize(model_path) / 1024 / 1024  # MB
+            logger.info(f"模型文件大小: {file_size:.2f} MB")
+        
         # 记录训练历史
-        import pandas as pd  # 添加这个导入
+        import pandas as pd
         self.training_history.append({
             'timestamp': pd.Timestamp.now(),
             'n_samples': {'train': len(X_train), 'val': len(X_val), 'test': len(X_test)},
@@ -213,6 +222,8 @@ class ModelAgent:
         })
         
         logger.info(f"模型训练完成，保存至: {model_path}")
+        logger.info(f"测试集性能指标: {test_metrics}")
+        
         return model_path
         
     def predict(self, model_path: str, fused_features: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

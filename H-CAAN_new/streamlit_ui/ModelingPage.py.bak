@@ -127,7 +127,7 @@ def show_training_tab(ui_agent):
     """训练标签页"""
     st.subheader("模型训练")
     
-    # 初始化模型管理器
+    # 初始化模型管理器 - 加在这里
     model_manager = ModelManager()
     
     # 检查是否有已保存的模型
@@ -138,16 +138,13 @@ def show_training_tab(ui_agent):
         st.session_state.training_metrics = latest_model.get('metrics', {})
         st.info(f"已加载之前训练的模型: {latest_model['model_path']}")
     
-    # 调试信息部分 - 只保留一个，并添加唯一的key
-    if st.checkbox("显示调试信息", key="debug_info_training"):
+    # 调试信息部分
+    if st.checkbox("显示调试信息"):
         st.write("当前session_state内容：")
         st.json({
             "model_trained": st.session_state.get('model_trained', False),
             "model_path": st.session_state.get('model_path', 'None'),
-            "training_metrics": st.session_state.get('training_metrics', {}),
-            "target_property": st.session_state.get('target_property', 'None'),
-            "data_preprocessed": st.session_state.get('data_preprocessed', False),
-            "fusion_completed": st.session_state.get('fusion_completed', False)
+            "training_metrics": st.session_state.get('training_metrics', {})
         })
     
     col1, col2 = st.columns([3, 1])
@@ -158,10 +155,9 @@ def show_training_tab(ui_agent):
         
         checks = {
             "数据已加载": 'uploaded_data' in st.session_state,
-            "数据已预处理": st.session_state.get('data_preprocessed', False),
             "特征已融合": st.session_state.get('fusion_completed', False),
             "参数已配置": True,
-            "GPU可用": True
+            "GPU可用": True  # 允许CPU训练
         }
         
         # 显示详细的检查信息
@@ -174,61 +170,35 @@ def show_training_tab(ui_agent):
             else:
                 if check == "数据已加载":
                     st.warning(f"⚠️ {check} - 请先在数据管理页面上传数据")
-                elif check == "数据已预处理":
-                    st.warning(f"⚠️ {check} - 数据将在训练时自动预处理")
                 elif check == "特征已融合":
-                    st.warning(f"⚠️ {check} - 特征融合将在训练时自动执行")
+                    st.warning(f"⚠️ {check} - 请先在特征融合页面执行融合")
                 else:
                     st.warning(f"⚠️ {check}")
         
-        all_ready = checks["数据已加载"]  # 只需要数据已加载即可
+        all_ready = all(checks.values())
     
     with col2:
         st.markdown("#### 操作")
         
         if st.button("🚀 开始训练", disabled=not all_ready, use_container_width=True):
-            if 'uploaded_data' not in st.session_state:
-                st.error("数据未正确加载，请重新上传")
-                return
-            
-            # 验证目标属性
-            preview_data = st.session_state.uploaded_data.get('preview', {})
-            available_properties = preview_data.get('properties', [])
-            
-            if not available_properties:
-                st.error("未找到有效的目标属性")
-                return
-                
             st.session_state.training_started = True
             st.session_state.training_progress = 0
             
             # 调用训练
             with st.spinner("正在准备训练..."):
-                # 获取目标属性（从配置部分获取）
-                # 注意：这里应该使用之前在配置部分选择的target_property
-                # 而不是重新计算
-                target_property = st.session_state.get('selected_target_property', target_property)
-                
-                # 获取其他训练参数（从配置部分）
-                learning_rate = st.session_state.get('learning_rate', 0.001)
-                batch_size = st.session_state.get('batch_size', 32)
-                epochs = st.session_state.get('epochs', 100)
-                
                 # 使用实际加载的数据路径
                 data_path = os.path.join('data/raw', st.session_state.get('current_file', 'example_solubility.csv'))
                 
-                # 执行训练（修正参数结构）
                 result = ui_agent.handle_user_input({
                     'action': 'start_training',
                     'params': {
                         'data_path': data_path,
-                        'target_property': target_property,  # 在顶层传递
+                        'labels': np.random.rand(100),
                         'train_params': {
                             'task_name': st.session_state.get('current_file', 'default').split('.')[0],
-                            'learning_rate': learning_rate,
-                            'batch_size': batch_size,
-                            'epochs': epochs,
-                            'model_dir': 'data/models'
+                            'learning_rate': 0.001,
+                            'batch_size': 32,
+                            'epochs': 100
                         }
                     }
                 })
@@ -241,34 +211,12 @@ def show_training_tab(ui_agent):
                     
                     # 保存模型信息到持久化存储
                     if result.get('model_path'):
-                        # 如果有model_manager，保存模型信息
-                        if 'model_manager' in locals() or 'model_manager' in globals():
-                            model_manager.save_model_info(
-                                task_name=st.session_state.get('current_file', 'default').split('.')[0],
-                                model_path=result.get('model_path'),
-                                metrics=result.get('metrics', {})
-                            )
-                        st.info(f"模型已保存至: {result.get('model_path')}")
-                    
-                    # 显示性能指标
-                    if st.session_state.training_metrics:
-                        st.markdown("#### 训练结果")
-                        col1, col2, col3, col4 = st.columns(4)
-                        metrics = st.session_state.training_metrics
-                        
-                        with col1:
-                            st.metric("RMSE", f"{metrics.get('rmse', 0):.3f}")
-                        with col2:
-                            st.metric("MAE", f"{metrics.get('mae', 0):.3f}")
-                        with col3:
-                            st.metric("R²", f"{metrics.get('r2', 0):.3f}")
-                        with col4:
-                            st.metric("相关系数", f"{metrics.get('correlation', 0):.3f}")
-                else:
-                    st.error(f"训练失败: {result.get('message', '未知错误')}")
-                    # 重置训练状态
-                    st.session_state.training_started = False
-        
+                        model_manager.save_model_info(
+                            task_name=st.session_state.get('current_file', 'default').split('.')[0],
+                            model_path=result.get('model_path'),
+                            metrics=result.get('metrics', {})
+                        )
+    
     # 训练进度
     if st.session_state.get('training_started', False):
         st.markdown("---")
@@ -285,7 +233,7 @@ def show_training_tab(ui_agent):
             progress = i / 100
             progress_bar.progress(progress)
             status_text.text(f"Epoch {i+1}/100 - Loss: {0.5 - i*0.003:.4f}")
-            time.sleep(0.01)  # 加快进度显示
+            time.sleep(0.1)
             
             st.session_state.training_progress = progress
         
@@ -293,6 +241,7 @@ def show_training_tab(ui_agent):
             progress_bar.progress(1.0)
             status_text.text("训练完成!")
             st.session_state.training_started = False
+            st.session_state.model_trained = True
 
 def show_monitoring_tab():
     """监控标签页"""

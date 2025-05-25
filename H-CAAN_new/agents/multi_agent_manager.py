@@ -149,7 +149,10 @@ class MultiAgentManager:
                 result = self.dispatch_task(task, **task_params)
                 
                 # 更新结果
-                self.task_status[workflow_id]['results'][task] = result
+                self.task_status[workflow_id]['results'][task] = result             
+                # 特别处理train_model任务
+                if task == 'train_model':
+                    logger.info(f"模型训练完成，路径: {result}")
                 self.task_status[workflow_id]['completed_tasks'].append(task)
                 
                 # 更新当前数据
@@ -207,6 +210,7 @@ class MultiAgentManager:
         """处理论文生成任务"""
         return self.agents['paper'].generate_paper(results, explanations, metadata)
         
+  
     def _prepare_task_params(self, task_name: str, current_data: Dict,
                             previous_results: Dict) -> Dict:
         """准备任务参数"""
@@ -219,11 +223,14 @@ class MultiAgentManager:
             params['raw_data'] = previous_results.get('load_data', current_data.get('raw_data'))
             
         elif task_name == 'fuse_features':
-            params['processed_data'] = previous_results.get('preprocess_data', 
+            # 优先使用split_data，然后是preprocess_data
+            params['processed_data'] = previous_results.get('split_data') or \
+                                    previous_results.get('preprocess_data') or \
+                                    current_data.get('processed_data')
         
         elif task_name == 'split_data':
             params['processed_data'] = previous_results.get('preprocess_data', 
-                                                          current_data.get('processed_data'))
+                                                        current_data.get('processed_data'))
             params['train_ratio'] = current_data.get('train_ratio', 0.8)
             params['val_ratio'] = current_data.get('val_ratio', 0.1)
             params['test_ratio'] = current_data.get('test_ratio', 0.1)
@@ -231,21 +238,32 @@ class MultiAgentManager:
         elif task_name == 'train_model':
             # 使用划分后的数据
             params['split_data'] = previous_results.get('split_data') or \
-                                  current_data.get('split_data')
-            params['train_params'] = current_data.get('train_params', {})                                                  current_data.get('processed_data'))
+                                current_data.get('split_data')
+            params['train_params'] = current_data.get('train_params', {})
             
+            # 确保传递target_property
+            if 'target_property' in current_data:
+                params['train_params']['target_property'] = current_data['target_property']
             
         elif task_name == 'predict':
             params['model_path'] = current_data.get('model_path')
             params['fused_features'] = previous_results.get('fuse_features',
-                                                          current_data.get('fused_features'))
+                                                        current_data.get('fused_features'))
             
         elif task_name == 'explain':
             params['model_path'] = previous_results.get('train_model',
-                                                       current_data.get('model_path'))
+                                                    current_data.get('model_path'))
             params['fused_features'] = previous_results.get('fuse_features',
-                                                          current_data.get('fused_features'))
-            params['predictions'] = previous_results.get('predict', {}).get(0) if 'predict' in previous_results else None
+                                                        current_data.get('fused_features'))
+            # 修复predictions的获取逻辑
+            if 'predict' in previous_results:
+                pred_result = previous_results['predict']
+                if isinstance(pred_result, tuple) and len(pred_result) > 0:
+                    params['predictions'] = pred_result[0]
+                else:
+                    params['predictions'] = None
+            else:
+                params['predictions'] = None
             
         elif task_name == 'generate_paper':
             params['results'] = current_data.get('results', {})

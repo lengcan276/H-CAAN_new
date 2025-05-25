@@ -12,6 +12,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.ui_agent import UIAgent
+from utils.model_manager import ModelManager  # 添加这行
 
 def show_explanation_page():
     """显示模型解释页面"""
@@ -23,6 +24,45 @@ def show_explanation_page():
         st.session_state.ui_agent = UIAgent()
     
     ui_agent = st.session_state.ui_agent
+    
+    # 添加模型管理器检查
+    model_manager = ModelManager()
+    latest_model = model_manager.get_latest_model()
+    
+    # 如果session中没有模型路径，尝试从持久化存储加载
+    if 'model_path' not in st.session_state and latest_model:
+        st.session_state.model_path = latest_model['model_path']
+        st.session_state.model_trained = True
+        st.session_state.training_metrics = latest_model.get('metrics', {})
+    
+    # 添加手动选择模型的选项
+    with st.expander("⚙️ 模型选择", expanded=True):
+        model_dir = 'data/models'
+        if os.path.exists(model_dir):
+            model_files = [f for f in os.listdir(model_dir) if f.endswith('.pkl')]
+            if model_files:
+                # 尝试从session_state获取当前模型文件名
+                current_model = None
+                if 'model_path' in st.session_state:
+                    current_model = os.path.basename(st.session_state.model_path)
+                
+                # 如果当前模型在列表中，设置为默认选项
+                if current_model in model_files:
+                    default_index = model_files.index(current_model)
+                else:
+                    default_index = 0
+                
+                selected_model = st.selectbox(
+                    "选择模型文件", 
+                    model_files,
+                    index=default_index
+                )
+                
+                if selected_model:
+                    full_path = os.path.join(model_dir, selected_model)
+                    st.session_state.model_path = full_path
+                    st.session_state.model_trained = True
+                    st.success(f"已选择模型: {selected_model}")
     
     # 解释设置
     with st.expander("⚙️ 解释设置", expanded=True):
