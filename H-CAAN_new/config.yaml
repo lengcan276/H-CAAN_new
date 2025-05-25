@@ -1,0 +1,20 @@
+# 系统配置
+system:
+  host: localhost
+  port: 8501
+  debug: false
+
+# 模型配置
+model:
+  device: cuda  # 或 cpu
+  batch_size: 32
+  learning_rate: 0.001
+
+# 数据配置
+data:
+  max_atoms: 150
+  max_smiles_length: 200
+
+# API配置（可选）
+api:
+  openai_key: your_key_here  # 用于论文生成

@@ -1,0 +1,11 @@
+smiles,toxicity,log_p
+CCCCCl,1,2.1
+c1ccc(Cl)cc1,1,2.8
+CC(C)Br,1,1.9
+CCCF,0,1.5
+c1ccncc1,0,0.8
+CC(=O)Cl,1,0.9
+CCCBr,1,2.3
+c1ccc(F)cc1,0,2.2
+CCCI,1,2.5
+c1cccnc1,0,1.2
