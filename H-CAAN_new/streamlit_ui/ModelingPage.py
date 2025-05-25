@@ -78,6 +78,7 @@ def show_modeling_page():
                         target_property = st.selectbox("目标属性", target_properties)
                     else:
                         target_property = st.selectbox("目标属性", default_properties)
+                    st.session_state.selected_target_property = target_property
                 else:
                     target_property = st.selectbox("目标属性", default_properties)
                 
@@ -215,7 +216,7 @@ def show_training_tab(ui_agent):
                 epochs = st.session_state.get('epochs', 100)
                 
                 # 使用实际加载的数据路径
-                data_path = os.path.join('data/raw', st.session_state.get('current_file', 'example_solubility.csv'))
+                data_path = os.path.join('/vol1/cleng/h-caan/h-caan/H-CAAN_new/data/raw', st.session_state.get('current_file', 'example_solubility.csv'))
                 
                 # 执行训练（修正参数结构）
                 result = ui_agent.handle_user_input({

@@ -8,6 +8,15 @@ import time
 import socket
 import signal
 import psutil
+import warnings
+import logging
+
+# 忽略特定警告
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message=".*torch._classes.*")
+
+# 设置日志级别
+logging.getLogger("streamlit.watcher.local_sources_watcher").setLevel(logging.ERROR)
 
 def check_port(port):
     """检查端口是否被占用"""

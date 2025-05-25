@@ -38,7 +38,8 @@ class UIAgent:
             
             elif action == 'preprocess_data':  # 添加这个分支
                 return self._handle_preprocess_data(params)
-                
+            elif action == 'analyze_data':
+                return self._handle_data_analysis(params)    
             elif action == 'start_training':
                 return self._handle_training(params)
                     
@@ -87,47 +88,146 @@ class UIAgent:
             
         else:
             return {}
-            
-    def _handle_data_upload(self, params: Dict) -> Dict:
-        """处理数据上传"""
-        file_path = params.get('file_path')
+    def _handle_data_analysis(self, params: Dict) -> Dict:
+        """处理数据分析请求"""
+        raw_data = params.get('raw_data', {})
+        file_path = params.get('file_path', '')
         
-        # 调用数据智能体加载数据
-        result = self.manager.dispatch_task('load_data', data_path=file_path)
+        # 调用data_agent进行深度分析
+        analysis_results = {}
         
-        # 保存到会话
-        self.session_data['raw_data'] = result
+        # 1. 基础统计
+        data_result = self.manager.dispatch_task('load_data', data_path=file_path)
         
-        # 生成预览数据
-        preview = self._generate_data_preview(result)
+        # 2. 预处理和特征提取
+        processed_result = self.manager.dispatch_task('preprocess_data', raw_data=data_result)
         
-        # 自动进行预处理和数据划分
-        preprocess_result = self._handle_preprocess_data({'raw_data': result})
+        # 3. 分析结果汇总
+        analysis_results.update({
+            'n_molecules': len(data_result.get('molecules', [])),
+            'valid_smiles_count': len([m for m in data_result.get('molecules', []) if m is not None]),
+            'descriptor_stats': self._calculate_descriptor_stats(processed_result),
+            'quality_checks': self._perform_quality_checks(data_result),
+            'extracted_features': ['SMILES编码', '分子指纹', '图特征'],
+            'analysis_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
         
         return {
             'status': 'success',
-            'message': f'成功加载 {len(result.get("molecules", []))} 个分子，并完成数据预处理',
-            'preview': preview,
-            'preprocess_result': preprocess_result
+            'analysis': analysis_results
+        }        
+    def _handle_data_upload(self, params: Dict) -> Dict:
+    """处理数据上传 - 包含完整的预处理流程"""
+    file_path = params.get('file_path')
+    
+    try:
+        # 1. 加载原始数据
+        logger.info(f"开始加载数据: {file_path}")
+        raw_data = self.manager.dispatch_task('load_data', data_path=file_path)
+        
+        # 验证数据
+        if not raw_data or not raw_data.get('molecules'):
+            return {
+                'status': 'error',
+                'message': '数据加载失败或文件为空'
+            }
+        
+        # 保存原始数据到会话
+        self.session_data['raw_data'] = raw_data
+        
+        # 2. 自动进行预处理
+        logger.info("开始数据预处理...")
+        processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
+        self.session_data['processed_data'] = processed_data
+        
+        # 3. 自动进行数据划分
+        # 从session_state获取用户设置的比例，如果没有则使用默认值
+        train_ratio = st.session_state.get('train_ratio', 0.8)
+        val_ratio = st.session_state.get('val_ratio', 0.1)
+        test_ratio = st.session_state.get('test_ratio', 0.1)
+        
+        logger.info(f"数据集划分比例 - 训练:{train_ratio}, 验证:{val_ratio}, 测试:{test_ratio}")
+        
+        split_data = self.manager.dispatch_task('split_data',
+            processed_data=processed_data,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio
+        )
+        
+        # 保存所有处理结果
+        self.session_data['split_data'] = split_data
+        
+        # 更新streamlit session_state（如果在streamlit环境中）
+        if 'st' in globals():
+            st.session_state['raw_data'] = raw_data
+            st.session_state['processed_data'] = processed_data
+            st.session_state['split_data'] = split_data
+            st.session_state['data_preprocessed'] = True
+            st.session_state['current_file'] = os.path.basename(file_path)
+        
+        # 生成详细的预览和统计信息
+        preview = self._generate_data_preview(raw_data)
+        
+        # 添加预处理后的统计信息
+        processing_stats = {
+            'n_molecules': len(raw_data.get('molecules', [])),
+            'valid_molecules': len([m for m in raw_data.get('molecules', []) if m is not None]),
+            'n_features': {
+                'smiles_features': len(processed_data.get('smiles_features', [])),
+                'fingerprints': len(processed_data.get('fingerprints', [])),
+                'graph_features': len(processed_data.get('graph_features', []))
+            },
+            'split_info': {
+                'train_samples': len(split_data['train']['fingerprints']),
+                'val_samples': len(split_data['val']['fingerprints']),
+                'test_samples': len(split_data['test']['fingerprints'])
+            },
+            'properties': list(raw_data.get('properties', {}).keys())
         }
-    def _handle_preprocess_data(self, params: Dict) -> Dict:
-        """处理数据预处理任务"""
-        # 获取原始数据（可以从params传入或从session_data获取）
+        
+        # 返回完整的结果
+        return {
+            'status': 'success',
+            'message': f'成功加载并预处理 {processing_stats["n_molecules"]} 个分子',
+            'preview': preview,
+            'processing_stats': processing_stats,
+            'preprocessing_complete': True
+        }
+        
+    except Exception as e:
+        logger.error(f"数据上传和预处理失败: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            'status': 'error',
+            'message': f'处理失败: {str(e)}',
+            'preprocessing_complete': False
+        }
+
+def _handle_preprocess_data(self, params: Dict) -> Dict:
+    """独立的预处理方法 - 可以单独调用"""
+    try:
+        # 获取原始数据
         raw_data = params.get('raw_data') or self.session_data.get('raw_data')
         
         if not raw_data:
             return {'status': 'error', 'message': '未找到原始数据，请先上传数据'}
         
-        # 调用数据智能体进行预处理
+        # 执行预处理
         processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
         
-        # 从session中获取训练集比例设置
-        train_ratio = st.session_state.get('train_ratio', 0.8)
+        # 获取数据划分参数
+        train_ratio = params.get('train_ratio', st.session_state.get('train_ratio', 0.8))
+        val_ratio = params.get('val_ratio', 0.1)
+        test_ratio = params.get('test_ratio', 0.1)
         
-        # 计算验证集和测试集比例
-        remaining = 1.0 - train_ratio
-        val_ratio = remaining * 0.5  # 剩余部分平分给验证集和测试集
-        test_ratio = remaining * 0.5
+        # 确保比例和为1
+        total = train_ratio + val_ratio + test_ratio
+        if abs(total - 1.0) > 0.001:
+            # 自动调整比例
+            train_ratio = train_ratio / total
+            val_ratio = val_ratio / total
+            test_ratio = test_ratio / total
         
         # 执行数据集划分
         split_data = self.manager.dispatch_task('split_data',
@@ -137,24 +237,32 @@ class UIAgent:
             test_ratio=test_ratio
         )
         
-        # 保存到session_data
-        self.session_data['split_data'] = split_data
+        # 保存结果
         self.session_data['processed_data'] = processed_data
+        self.session_data['split_data'] = split_data
         
-        # 同时保存到streamlit session_state
+        # 更新streamlit session_state
         if 'st' in globals():
+            st.session_state['processed_data'] = processed_data
             st.session_state['split_data'] = split_data
             st.session_state['data_preprocessed'] = True
         
         return {
             'status': 'success',
             'message': f'数据预处理完成，已划分为训练集({train_ratio:.0%})、'
-                    f'验证集({val_ratio:.0%})、测试集({test_ratio:.0%})',
+                      f'验证集({val_ratio:.0%})、测试集({test_ratio:.0%})',
             'split_info': {
                 'train_samples': len(split_data['train']['fingerprints']),
                 'val_samples': len(split_data['val']['fingerprints']),
                 'test_samples': len(split_data['test']['fingerprints'])
             }
+        }
+        
+    except Exception as e:
+        logger.error(f"预处理失败: {str(e)}")
+        return {
+            'status': 'error',
+            'message': f'预处理失败: {str(e)}'
         }
         
     def _handle_training(self, params: Dict) -> Dict:

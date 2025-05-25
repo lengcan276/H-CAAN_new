@@ -18,7 +18,18 @@ def show_fusion_page():
     """显示特征融合页面"""
     st.title("🔄 多模态特征融合")
     st.markdown("基于MFBERT和MMFDL文献的层次化跨模态自适应注意力融合")
-    
+      # 显示当前加载的数据信息
+    if 'current_file' in st.session_state and 'uploaded_data' in st.session_state:
+        st.info(f"""
+        📊 **当前数据集信息**
+        - 文件名: {st.session_state.current_file}
+        - 分子数量: {st.session_state.uploaded_data.get('preview', {}).get('n_molecules', 'Unknown')}
+        - 属性: {', '.join(st.session_state.uploaded_data.get('preview', {}).get('properties', []))}
+        - 数据状态: {'✅ 已预处理' if st.session_state.get('data_preprocessed', False) else '⚠️ 未预处理'}
+        """)
+    else:
+        st.warning("❌ 未加载数据，请先在数据管理页面上传数据")
+        return
     # 初始化
     if 'ui_agent' not in st.session_state:
         st.session_state.ui_agent = UIAgent()
