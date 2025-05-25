@@ -98,3 +98,41 @@ H-CAAN/
 - **Data Processing**: Pandas, NumPy, SciPy
 - **Visualization**: Matplotlib, Plotly, Streamlit
 - **Evaluation**: Scikit-learn, TorchMetrics
+
+H-CAAN/
+├── config/                     # 配置文件，保持不变
+├── data/                       # 数据处理模块，保持不变
+├── models/                     # 模型定义模块，保持不变
+├── training/                   # 训练模块，保持不变
+├── evaluation/                 # 评估模块，保持不变
+├── utils/                      # 工具函数，保持不变
+├── agents/                     # 代理模块，稍作调整
+│   ├── base_agent.py           # 新增：基础代理类，定义通用接口
+│   ├── agent_manager.py        # 重构：简化接口，增强错误处理
+│   ├── research_agent.py       # 保持不变
+│   ├── data_agent.py           # 保持不变
+│   ├── model_agent.py          # 保持不变
+│   ├── evaluation_agent.py     # 保持不变
+│   └── writing_agent.py        # 修改：移除依赖，完善内部实现
+├── streamlit/                  # 完全重构
+│   ├── app.py                  # 主应用，简化为路由和状态管理
+│   ├── state.py                # 新增：集中式状态管理
+│   ├── styles.py               # 新增：CSS样式和主题
+│   ├── api.py                  # 新增：统一API调用层，连接UI和agents
+│   ├── workflow.py             # 新增：工作流程逻辑和依赖管理
+│   ├── pages/                  # 简化页面逻辑，每个页面专注于单一职责
+│   │   ├── home.py             # 更名：首页/欢迎页
+│   │   ├── data.py             # 更名：数据准备页面
+│   │   ├── model.py            # 更名：模型配置页面
+│   │   ├── train.py            # 更名：训练页面
+│   │   ├── results.py          # 保持不变：结果可视化页面
+│   │   └── paper.py            # 保持不变：论文生成页面
+│   └── components/             # 可复用UI组件，有重大扩展
+│       ├── header.py           # 新增：页面标题和导航
+│       ├── sidebar.py          # 新增：侧边栏组件
+│       ├── workflow_status.py  # 新增：工作流程状态组件
+│       ├── modal.py            # 新增：模态对话框组件
+│       ├── charts.py           # 新增：图表组件
+│       ├── molecule_viewer.py  # 新增：分子可视化组件
+│       └── file_uploader.py    # 新增：文件上传组件
+└── main.py                     # 主脚本，保持不变

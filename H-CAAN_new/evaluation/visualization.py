@@ -25,7 +25,145 @@ import base64
 
 # Set up logger
 logger = logging.getLogger(__name__)
-
+def generate_molecule_visualizations(molecules, property_values=None, attention_weights=None, 
+                                     n_molecules=5, output_dir='results/figures', 
+                                     save_fig=True, figsize=(10, 10)):
+    """
+    Generate visualizations for molecules with optional property values and attention weights
+    
+    Args:
+        molecules: List of RDKit molecules or SMILES strings
+        property_values: Optional dictionary with molecule index as key and property value as value
+        attention_weights: Optional dictionary with molecule index as key and atom attention weights as value
+        n_molecules: Number of molecules to visualize (default: 5)
+        output_dir: Directory to save figures
+        save_fig: Whether to save the figure
+        figsize: Figure size
+        
+    Returns:
+        Dictionary of molecule visualizations
+    """
+    from rdkit import Chem
+    from rdkit.Chem import AllChem, Draw, rdMolDraw2D
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from pathlib import Path
+    import io
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    
+    # Limit number of molecules
+    if n_molecules > 0:
+        molecules = molecules[:n_molecules]
+    
+    # Convert molecules to RDKit molecules if they are SMILES strings
+    rdkit_mols = []
+    for i, mol in enumerate(molecules):
+        if isinstance(mol, str):
+            rdmol = Chem.MolFromSmiles(mol)
+            if rdmol is not None:
+                rdkit_mols.append(rdmol)
+            else:
+                logger.warning(f"Could not parse SMILES at index {i}: {mol}")
+        else:
+            rdkit_mols.append(mol)
+    
+    # Generate visualizations
+    visualizations = {}
+    
+    for i, mol in enumerate(rdkit_mols):
+        # Compute 2D coordinates
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=42)
+        AllChem.MMFFOptimizeMolecule(mol)
+        mol = Chem.RemoveHs(mol)
+        
+        # Get molecule title
+        if property_values is not None and i in property_values:
+            title = f"Molecule {i+1}: Property = {property_values[i]:.3f}"
+        else:
+            title = f"Molecule {i+1}"
+        
+        # If attention weights are provided, use them to color atoms
+        if attention_weights is not None and i in attention_weights:
+            # Normalize weights to [0, 1]
+            weights = attention_weights[i]
+            
+            if weights:
+                min_weight = min(weights.values())
+                max_weight = max(weights.values())
+                weight_range = max_weight - min_weight
+                
+                normalized_weights = {
+                    idx: (weight - min_weight) / weight_range if weight_range > 0 else 0.5
+                    for idx, weight in weights.items()
+                }
+            else:
+                normalized_weights = {}
+            
+            # Convert to atom highlights and colors
+            atom_highlights = []
+            atom_colors = {}
+            
+            for atom_idx, weight in normalized_weights.items():
+                if atom_idx < mol.GetNumAtoms():
+                    atom_highlights.append(atom_idx)
+                    # Convert weight to color (blue -> red gradient)
+                    r = int(255 * weight)
+                    b = int(255 * (1 - weight))
+                    atom_colors[atom_idx] = (r, 0, b)
+            
+            # Draw molecule with highlights
+            drawer = rdMolDraw2D.MolDraw2DCairo(int(figsize[0] * 100), int(figsize[1] * 100))
+            drawer.DrawMolecule(
+                mol,
+                highlightAtoms=atom_highlights,
+                highlightAtomColors=atom_colors
+            )
+            drawer.FinishDrawing()
+            
+            png_data = drawer.GetDrawingText()
+            
+            # Save figure
+            if save_fig:
+                with open(output_path / f"molecule_{i+1}_attention.png", 'wb') as f:
+                    f.write(png_data)
+            
+            # Convert to matplotlib figure
+            import io
+            from PIL import Image
+            
+            img = Image.open(io.BytesIO(png_data))
+            fig, ax = plt.subplots(figsize=figsize)
+            ax.imshow(img)
+            ax.axis('off')
+            ax.set_title(title, fontsize=14)
+            
+            plt.tight_layout()
+            
+            visualizations[f"molecule_{i+1}"] = fig
+        else:
+            # Just draw the molecule without highlights
+            img = Draw.MolToImage(mol, size=(int(figsize[0] * 100), int(figsize[1] * 100)))
+            
+            # Save figure
+            if save_fig:
+                img.save(output_path / f"molecule_{i+1}.png")
+            
+            # Convert to matplotlib figure
+            fig, ax = plt.subplots(figsize=figsize)
+            ax.imshow(img)
+            ax.axis('off')
+            ax.set_title(title, fontsize=14)
+            
+            plt.tight_layout()
+            
+            visualizations[f"molecule_{i+1}"] = fig
+    
+    return visualizations
 def plot_training_curves(history, output_dir='results/figures', save_fig=True, figsize=(12, 8)):
     """
     Plot training and validation curves

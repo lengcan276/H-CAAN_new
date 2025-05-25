@@ -1,309 +1,681 @@
-import os
-import logging
-from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.agents import Tool
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationChain
+"""
+代理管理器模块，用于协调和管理H-CAAN项目中的多个专业代理。
+提供统一的接口进行任务执行、消息传递和错误处理。
+"""
 
-from agents.data_agent import DataAgent
-from agents.model_agent import ModelAgent
-from agents.evaluation_agent import EvaluationAgent
-from agents.writing_agent import WritingAgent
+import os
+import sys
+import time
+import json
+import logging
+import traceback
+from typing import Dict, List, Any, Optional, Union, Callable, Tuple
+import threading
+import uuid
+
+# 确保base_agent可用
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+from .base_agent import BaseAgent
 
 class AgentManager:
     """
-    Manager for the agent-based drug property prediction research pipeline.
-    
-    This class orchestrates the collaboration between specialized agents for
-    data processing, model training, evaluation, and paper writing.
+    管理和协调多个专业代理的中心系统。
+    处理代理注册、任务分发、消息传递和错误恢复。
     """
     
-    def __init__(self, openai_api_key=None, verbose=True):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
-        Initialize the agent manager.
+        初始化代理管理器。
         
         Args:
-            openai_api_key (str, optional): OpenAI API key. If None, use environment variable.
-            verbose (bool): Whether to output detailed logs
+            config: 配置字典，包含日志级别、错误处理策略等
         """
-        # Set up logging
-        self.verbose = verbose
-        self.logger = self._setup_logging()
+        # 默认配置
+        self.config = {
+            "log_level": "INFO",
+            "error_retry_attempts": 3,
+            "error_retry_delay": 2.0,  # 秒
+            "timeout": 120.0,  # 秒
+            "auto_recovery": True,
+            "save_state_interval": 300.0,  # 秒
+            "state_dir": os.path.join(os.path.dirname(current_dir), "state")
+        }
         
-        # Get API key from environment variable if not provided
-        self.openai_api_key = openai_api_key or os.environ.get("OPENAI_API_KEY")
-        if not self.openai_api_key:
-            self.logger.warning("OpenAI API key not provided. Some agent functionalities may be limited.")
+        # 更新配置
+        if config:
+            self.config.update(config)
         
-        # Initialize shared knowledge base
+        # 设置日志记录器
+        self.logger = self._setup_logger()
+        
+        # 注册的代理
+        self.agents = {}
+        
+        # 代理通信总线
+        self.message_bus = {}
+        
+        # 全局知识库
         self.knowledge_base = {}
         
-        # Initialize agents
-        self.agents = self._setup_agents()
+        # 任务历史记录
+        self.task_history = []
         
-        # Initialize LLM for coordination
-        self.llm = self._setup_llm()
+        # 线程安全锁
+        self.lock = threading.RLock()
         
-        # Initialize shared memory
-        self.memory = ConversationBufferMemory()
-        
-        # Initialize conversation chain
-        self.conversation = ConversationChain(
-            llm=self.llm,
-            memory=self.memory,
-            verbose=self.verbose
-        )
+        # 代理状态保存计时器
+        self._start_state_save_timer()
         
         self.logger.info("Agent Manager initialized successfully")
     
-    def _setup_logging(self):
-        """Set up logging configuration"""
+    def _setup_logger(self) -> logging.Logger:
+        """
+        设置日志记录器。
+        
+        Returns:
+            配置好的日志记录器
+        """
         logger = logging.getLogger("AgentManager")
         
-        if self.verbose:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
+        # 设置日志级别
+        log_level = getattr(logging, self.config["log_level"].upper(), logging.INFO)
+        logger.setLevel(log_level)
         
-        # Create console handler
-        ch = logging.StreamHandler()
-        ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-        logger.addHandler(ch)
+        # 检查是否已有处理程序
+        if logger.handlers:
+            return logger
+        
+        # 创建控制台处理程序
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(log_level)
+        
+        # 创建格式化程序
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(formatter)
+        
+        # 添加处理程序到日志记录器
+        logger.addHandler(console_handler)
+        
+        # 创建日志目录（如果不存在）
+        log_dir = os.path.join(os.path.dirname(current_dir), 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+        
+        # 创建文件处理程序
+        file_handler = logging.FileHandler(os.path.join(log_dir, "agent_manager.log"))
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        
+        # 添加文件处理程序到日志记录器
+        logger.addHandler(file_handler)
         
         return logger
     
-    def _setup_llm(self):
-        """Set up the language model for coordination"""
-        if self.openai_api_key:
-            try:
-                llm = ChatOpenAI(
-                    model_name="gpt-4",
-                    temperature=0.2,
-                    openai_api_key=self.openai_api_key
-                )
-                return llm
-            except Exception as e:
-                self.logger.error(f"Error initializing ChatOpenAI: {str(e)}")
-                self.logger.warning("Falling back to simulated LLM.")
+    def _start_state_save_timer(self) -> None:
+        """启动定期保存代理状态的计时器"""
+        save_interval = self.config["save_state_interval"]
         
-        # Fallback to simulated LLM
-        llm = self._simulated_llm()
-        return llm
+        def save_state_worker():
+            while True:
+                time.sleep(save_interval)
+                try:
+                    self.save_all_agent_states()
+                except Exception as e:
+                    self.logger.error(f"Error saving agent states: {str(e)}")
+        
+        # 创建并启动后台线程
+        thread = threading.Thread(target=save_state_worker, daemon=True)
+        thread.start()
     
-    def _simulated_llm(self):
-        """Create a simulated LLM for demonstration purposes"""
-        from langchain.llms.fake import FakeListLLM
-        
-        responses = [
-            "Based on the data analysis, I recommend focusing on molecular weight and LogP as key features.",
-            "The H-CAAN model architecture should prioritize the cross-modal attention components.",
-            "Ablation studies show that the chemical-aware attention mechanism contributes significantly to performance.",
-            "The paper should emphasize the novel hierarchical fusion approach and its benefits.",
-            "I'll coordinate the agents to complete the research pipeline efficiently."
-        ]
-        
-        return FakeListLLM(responses=responses)
-    
-    def _setup_agents(self):
-        """Initialize all specialized agents"""
-        agents = {}
-        
-        # Data agent for dataset processing
-        agents["data"] = DataAgent(
-            knowledge_base=self.knowledge_base,
-            openai_api_key=self.openai_api_key,
-            verbose=self.verbose
-        )
-        
-        # Model agent for architecture design and training
-        agents["model"] = ModelAgent(
-            knowledge_base=self.knowledge_base,
-            openai_api_key=self.openai_api_key,
-            verbose=self.verbose
-        )
-        
-        # Evaluation agent for results analysis
-        agents["evaluation"] = EvaluationAgent(
-            knowledge_base=self.knowledge_base,
-            openai_api_key=self.openai_api_key,
-            verbose=self.verbose
-        )
-        
-        # Writing agent for paper generation
-        agents["writing"] = WritingAgent(
-            knowledge_base=self.knowledge_base,
-            openai_api_key=self.openai_api_key,
-            verbose=self.verbose
-        )
-        
-        return agents
-    
-    def get_agent(self, agent_name):
+    def register_agent(self, agent: BaseAgent) -> None:
         """
-        Get a specific agent by name.
+        注册单个代理。
         
         Args:
-            agent_name (str): Name of the agent to retrieve
-            
-        Returns:
-            Agent: The requested agent
+            agent: 要注册的代理实例
         """
-        if agent_name not in self.agents:
-            self.logger.error(f"Agent '{agent_name}' not found")
-            return None
-        
-        return self.agents[agent_name]
+        with self.lock:
+            self.agents[agent.name] = agent
+            agent.set_agent_manager(self)
+            self.logger.info(f"Registered agent: {agent.name}")
     
-    def execute_pipeline(self, dataset_path, model_config, training_config):
+    def register_agents(self, agents: Dict[str, BaseAgent]) -> None:
         """
-        Execute the full research pipeline.
+        批量注册多个代理。
         
         Args:
-            dataset_path (str): Path to the dataset
-            model_config (dict): Model configuration
-            training_config (dict): Training configuration
+            agents: 代理名称到代理实例的映射字典
+        """
+        for name, agent in agents.items():
+            agent.name = name  # 确保代理名称与键匹配
+            self.register_agent(agent)
+    
+    def get_agent(self, agent_name: str) -> Optional[BaseAgent]:
+        """
+        获取指定名称的代理。
+        
+        Args:
+            agent_name: 代理名称
             
         Returns:
-            dict: Results of the pipeline execution
+            代理实例或None（如果未找到）
         """
-        self.logger.info("Starting full research pipeline execution")
+        return self.agents.get(agent_name)
+    
+    def get_all_agents(self) -> Dict[str, BaseAgent]:
+        """
+        获取所有注册的代理。
         
-        # Step 1: Data processing
-        self.logger.info("Step 1: Data processing")
-        data_agent = self.agents["data"]
-        data_results = data_agent.process_dataset(dataset_path)
+        Returns:
+            代理名称到代理实例的映射字典
+        """
+        return self.agents.copy()
+    
+    def execute_task(self, agent_name: str, task_type: str, **task_args) -> Any:
+        """
+        执行特定代理的任务。
         
-        # Update knowledge base
-        self.knowledge_base.update(data_results)
+        Args:
+            agent_name: 代理名称
+            task_type: 任务类型
+            **task_args: 任务参数
+            
+        Returns:
+            任务执行结果
+            
+        Raises:
+            ValueError: 如果代理不存在
+            Exception: 任务执行中的其他错误
+        """
+        start_time = time.time()
+        task_id = str(uuid.uuid4())
         
-        # Step 2: Model configuration and training
-        self.logger.info("Step 2: Model configuration and training")
-        model_agent = self.agents["model"]
+        # 获取代理
+        agent = self.get_agent(agent_name)
+        if not agent:
+            error_msg = f"Agent not found: {agent_name}"
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
         
-        # Configure model
-        model_summary = model_agent.configure_model(model_config)
+        # 记录任务开始
+        self.logger.info(f"Executing task: {task_type} on agent: {agent_name} (ID: {task_id})")
         
-        # Train model
-        training_results = model_agent.train_model(training_config)
-        
-        # Update knowledge base
-        self.knowledge_base.update({
-            "model_summary": model_summary,
-            "training_results": training_results
-        })
-        
-        # Step 3: Evaluation
-        self.logger.info("Step 3: Evaluation and analysis")
-        evaluation_agent = self.agents["evaluation"]
-        evaluation_results = evaluation_agent.evaluate_results(
-            training_results, 
-            model_config
-        )
-        
-        # Update knowledge base
-        self.knowledge_base.update({
-            "evaluation_results": evaluation_results
-        })
-        
-        # Step 4: Paper generation
-        self.logger.info("Step 4: Paper generation")
-        writing_agent = self.agents["writing"]
-        paper = writing_agent.generate_paper()
-        
-        # Compile final results
-        pipeline_results = {
-            "data_results": data_results,
-            "model_summary": model_summary,
-            "training_results": training_results,
-            "evaluation_results": evaluation_results,
-            "paper": paper
+        # 添加到任务历史
+        task_record = {
+            "id": task_id,
+            "agent": agent_name,
+            "task_type": task_type,
+            "args": task_args,
+            "start_time": start_time,
+            "end_time": None,
+            "status": "running",
+            "result": None,
+            "error": None
         }
         
-        self.logger.info("Research pipeline execution completed successfully")
+        with self.lock:
+            self.task_history.append(task_record)
         
-        return pipeline_results
+        retry_attempts = self.config["error_retry_attempts"]
+        retry_delay = self.config["error_retry_delay"]
+        
+        # 尝试执行任务，支持重试
+        for attempt in range(1, retry_attempts + 1):
+            try:
+                # 执行任务
+                result = agent.execute_task(task_type, **task_args)
+                
+                # 更新任务记录
+                end_time = time.time()
+                with self.lock:
+                    for task in self.task_history:
+                        if task["id"] == task_id:
+                            task["end_time"] = end_time
+                            task["status"] = "completed"
+                            task["result"] = "success"
+                
+                # 记录任务完成
+                execution_time = end_time - start_time
+                self.logger.info(f"Task completed: {task_type} (ID: {task_id}) in {execution_time:.2f}s")
+                
+                return result
+                
+            except Exception as e:
+                error_msg = str(e)
+                stack_trace = traceback.format_exc()
+                
+                # 记录错误
+                self.logger.error(f"Error executing task {task_type} on agent {agent_name} "
+                                 f"(Attempt {attempt}/{retry_attempts}): {error_msg}")
+                self.logger.debug(f"Stack trace: {stack_trace}")
+                
+                # 如果有更多重试机会，则等待后重试
+                if attempt < retry_attempts:
+                    self.logger.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    # 更新任务记录
+                    end_time = time.time()
+                    with self.lock:
+                        for task in self.task_history:
+                            if task["id"] == task_id:
+                                task["end_time"] = end_time
+                                task["status"] = "error"
+                                task["error"] = {
+                                    "message": error_msg,
+                                    "traceback": stack_trace
+                                }
+                    
+                    # 记录最终失败
+                    self.logger.error(f"Task failed after {retry_attempts} attempts: {task_type} (ID: {task_id})")
+                    
+                    # 重新抛出异常
+                    raise
     
-    def coordinate_agents(self, query):
+    def execute_task_async(self, agent_name: str, task_type: str, 
+                         callback: Optional[Callable] = None, **task_args) -> str:
         """
-        Coordinate agents based on a high-level query.
+        异步执行特定代理的任务。
         
         Args:
-            query (str): High-level research query
+            agent_name: 代理名称
+            task_type: 任务类型
+            callback: 任务完成时调用的回调函数
+            **task_args: 任务参数
             
         Returns:
-            str: Response from the coordination
+            任务ID
         """
-        # Create tools for each agent
-        tools = []
+        task_id = str(uuid.uuid4())
         
-        # Data agent tools
-        tools.append(
-            Tool(
-                name="DataProcessing",
-                func=self.agents["data"].process_dataset,
-                description="Analyzes and processes molecular datasets. Use this for data preparation tasks."
-            )
-        )
+        def thread_func():
+            try:
+                result = self.execute_task(agent_name, task_type, **task_args)
+                
+                # 调用回调
+                if callback:
+                    try:
+                        callback(result, None)
+                    except Exception as callback_error:
+                        self.logger.error(f"Error in callback for task {task_id}: {str(callback_error)}")
+            except Exception as e:
+                # 调用回调传递错误
+                if callback:
+                    try:
+                        callback(None, e)
+                    except Exception as callback_error:
+                        self.logger.error(f"Error in error callback for task {task_id}: {str(callback_error)}")
         
-        # Model agent tools
-        tools.append(
-            Tool(
-                name="ModelConfiguration",
-                func=self.agents["model"].configure_model,
-                description="Configures the H-CAAN model architecture. Use this for model design tasks."
-            )
-        )
+        thread = threading.Thread(target=thread_func)
+        thread.daemon = True
+        thread.start()
         
-        tools.append(
-            Tool(
-                name="ModelTraining",
-                func=self.agents["model"].train_model,
-                description="Trains the H-CAAN model. Use this for model training and optimization tasks."
-            )
-        )
-        
-        # Evaluation agent tools
-        tools.append(
-            Tool(
-                name="ResultsEvaluation",
-                func=self.agents["evaluation"].evaluate_results,
-                description="Analyzes and evaluates model results. Use this for performance assessment tasks."
-            )
-        )
-        
-        # Writing agent tools
-        tools.append(
-            Tool(
-                name="PaperGeneration",
-                func=self.agents["writing"].generate_paper,
-                description="Generates research paper drafts. Use this for paper writing tasks."
-            )
-        )
-        
-        # Use conversation chain to respond
-        response = self.conversation.predict(input=query)
-        
-        return response
+        return task_id
     
-    def get_knowledge_base(self):
+    def broadcast_message(self, message_type: str, content: Any, 
+                        sender: Optional[str] = None) -> Dict[str, Any]:
         """
-        Get the current state of the knowledge base.
-        
-        Returns:
-            dict: Current knowledge base
-        """
-        return self.knowledge_base
-    
-    def update_knowledge_base(self, key, value):
-        """
-        Update a specific entry in the knowledge base.
+        向所有代理广播消息。
         
         Args:
-            key (str): Key to update
-            value: Value to set
+            message_type: 消息类型
+            content: 消息内容
+            sender: 发送者名称（可选）
+            
+        Returns:
+            包含各代理处理结果的字典
         """
-        self.knowledge_base[key] = value
-        self.logger.debug(f"Knowledge base updated: {key}")
+        self.logger.info(f"Broadcasting message of type {message_type} from {sender or 'AgentManager'}")
+        
+        results = {}
+        
+        # 向每个代理发送消息
+        for name, agent in self.agents.items():
+            # 跳过发送者
+            if name == sender:
+                continue
+                
+            try:
+                # 发送消息并接收响应
+                response = agent.receive_message(message_type, content, sender or "AgentManager")
+                results[name] = response
+            except Exception as e:
+                error_msg = str(e)
+                self.logger.error(f"Error sending message to agent {name}: {error_msg}")
+                results[name] = {"error": error_msg}
+        
+        return results
+    
+    def send_message(self, from_agent: str, to_agent: str, 
+                   message_type: str, content: Any) -> Any:
+        """
+        从一个代理向另一个代理发送消息。
+        
+        Args:
+            from_agent: 发送者代理名称
+            to_agent: 接收者代理名称
+            message_type: 消息类型
+            content: 消息内容
+            
+        Returns:
+            接收者的响应
+            
+        Raises:
+            ValueError: 如果代理不存在
+        """
+        # 获取接收者代理
+        agent = self.get_agent(to_agent)
+        if not agent:
+            error_msg = f"Target agent not found: {to_agent}"
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        # 记录消息
+        self.logger.info(f"Sending message of type {message_type} from {from_agent} to {to_agent}")
+        
+        try:
+            # 发送消息并获取响应
+            response = agent.receive_message(message_type, content, from_agent)
+            return response
+        except Exception as e:
+            error_msg = str(e)
+            self.logger.error(f"Error sending message from {from_agent} to {to_agent}: {error_msg}")
+            raise
+    
+    def update_knowledge_base(self, data: Dict[str, Any]) -> None:
+        """
+        更新全局知识库。
+        
+        Args:
+            data: 要添加到知识库的数据字典
+        """
+        with self.lock:
+            self.knowledge_base.update(data)
+            self.logger.debug(f"Knowledge base updated with {len(data)} items")
+    
+    def get_knowledge_base(self) -> Dict[str, Any]:
+        """
+        获取全局知识库。
+        
+        Returns:
+            知识库字典
+        """
+        return self.knowledge_base.copy()
+    
+    def get_task_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        获取任务执行历史。
+        
+        Args:
+            limit: 返回的最大记录数（如果为None，则返回所有记录）
+            
+        Returns:
+            任务历史记录列表
+        """
+        with self.lock:
+            if limit:
+                return self.task_history[-limit:]
+            return self.task_history.copy()
+    
+    def save_all_agent_states(self) -> Dict[str, str]:
+        """
+        保存所有代理的状态。
+        
+        Returns:
+            代理名称到状态文件路径的映射字典
+        """
+        state_dir = self.config["state_dir"]
+        os.makedirs(state_dir, exist_ok=True)
+        
+        state_files = {}
+        
+        for name, agent in self.agents.items():
+            try:
+                file_path = os.path.join(state_dir, f"{name.lower()}_state.json")
+                agent.save_state(file_path)
+                state_files[name] = file_path
+            except Exception as e:
+                self.logger.error(f"Error saving state for agent {name}: {str(e)}")
+        
+        # 保存管理器自身状态
+        try:
+            manager_state = {
+                "knowledge_base": self.knowledge_base,
+                "task_history": self.task_history[-100:],  # 只保存最近100个任务
+                "timestamp": time.time()
+            }
+            
+            manager_state_path = os.path.join(state_dir, "agent_manager_state.json")
+            with open(manager_state_path, 'w') as f:
+                json.dump(manager_state, f, indent=2)
+                
+            state_files["manager"] = manager_state_path
+            
+        except Exception as e:
+            self.logger.error(f"Error saving manager state: {str(e)}")
+        
+        self.logger.info(f"Saved states for {len(state_files)} agents")
+        return state_files
+    
+    def load_all_agent_states(self) -> Dict[str, bool]:
+        """
+        加载所有代理的状态。
+        
+        Returns:
+            代理名称到加载成功标志的映射字典
+        """
+        state_dir = self.config["state_dir"]
+        
+        if not os.path.exists(state_dir):
+            self.logger.warning(f"State directory {state_dir} does not exist")
+            return {}
+        
+        results = {}
+        
+        for name, agent in self.agents.items():
+            try:
+                file_path = os.path.join(state_dir, f"{name.lower()}_state.json")
+                success = agent.load_state(file_path)
+                results[name] = success
+            except Exception as e:
+                self.logger.error(f"Error loading state for agent {name}: {str(e)}")
+                results[name] = False
+        
+        # 加载管理器自身状态
+        try:
+            manager_state_path = os.path.join(state_dir, "agent_manager_state.json")
+            
+            if os.path.exists(manager_state_path):
+                with open(manager_state_path, 'r') as f:
+                    manager_state = json.load(f)
+                
+                with self.lock:
+                    if "knowledge_base" in manager_state:
+                        self.knowledge_base = manager_state["knowledge_base"]
+                    
+                    if "task_history" in manager_state:
+                        self.task_history = manager_state["task_history"]
+                
+                results["manager"] = True
+            else:
+                results["manager"] = False
+                
+        except Exception as e:
+            self.logger.error(f"Error loading manager state: {str(e)}")
+            results["manager"] = False
+        
+        self.logger.info(f"Loaded states for {sum(1 for v in results.values() if v)} agents")
+        return results
+    
+    def check_agent_health(self) -> Dict[str, str]:
+        """
+        检查所有代理的健康状态。
+        
+        Returns:
+            代理名称到健康状态描述的映射字典
+        """
+        health_status = {}
+        
+        for name, agent in self.agents.items():
+            try:
+                # 获取代理状态
+                status = agent.get_status()
+                
+                # 检查上次活动时间
+                last_activity = status.get("last_activity", 0)
+                current_time = time.time()
+                time_since_activity = current_time - last_activity
+                
+                # 根据活动时间和状态判断健康状态
+                if time_since_activity > 3600:  # 超过1小时无活动
+                    health_status[name] = "inactive"
+                elif status.get("status") == "error":
+                    health_status[name] = "error"
+                elif status.get("busy"):
+                    health_status[name] = "busy"
+                else:
+                    health_status[name] = "healthy"
+                    
+            except Exception as e:
+                self.logger.error(f"Error checking health of agent {name}: {str(e)}")
+                health_status[name] = "unknown"
+        
+        return health_status
+    
+    def restart_agent(self, agent_name: str) -> bool:
+        """
+        尝试重启特定代理。
+        
+        Args:
+            agent_name: 要重启的代理名称
+            
+        Returns:
+            重启是否成功
+        """
+        agent = self.get_agent(agent_name)
+        if not agent:
+            self.logger.error(f"Cannot restart: Agent not found: {agent_name}")
+            return False
+        
+        try:
+            # 保存当前状态
+            self.logger.info(f"Saving state before restarting agent {agent_name}")
+            state_file = agent.save_state()
+            
+            # 获取代理类
+            agent_class = agent.__class__
+            
+            # 创建新实例
+            self.logger.info(f"Creating new instance of agent {agent_name}")
+            new_agent = agent_class(self)
+            new_agent.name = agent_name
+            
+            # 加载保存的状态
+            self.logger.info(f"Loading state into new agent instance")
+            new_agent.load_state(state_file)
+            
+            # 更新代理注册
+            with self.lock:
+                self.agents[agent_name] = new_agent
+            
+            self.logger.info(f"Successfully restarted agent {agent_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error restarting agent {agent_name}: {str(e)}")
+            return False
+    
+    def execute_workflow(self, workflow_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        执行预定义工作流。
+        
+        Args:
+            workflow_config: 工作流配置字典
+            
+        Returns:
+            工作流结果字典
+        """
+        workflow_name = workflow_config.get("name", "unnamed_workflow")
+        steps = workflow_config.get("steps", [])
+        
+        self.logger.info(f"Starting workflow: {workflow_name} with {len(steps)} steps")
+        
+        workflow_results = {
+            "name": workflow_name,
+            "start_time": time.time(),
+            "end_time": None,
+            "status": "running",
+            "step_results": {}
+        }
+        
+        for i, step in enumerate(steps):
+            step_name = step.get("name", f"step_{i+1}")
+            agent_name = step.get("agent")
+            task_type = step.get("task")
+            task_args = step.get("args", {})
+            
+            self.logger.info(f"Executing workflow step {i+1}/{len(steps)}: {step_name}")
+            
+            try:
+                # 执行步骤
+                result = self.execute_task(agent_name, task_type, **task_args)
+                
+                # 保存步骤结果
+                workflow_results["step_results"][step_name] = {
+                    "status": "completed",
+                    "result": result
+                }
+                
+            except Exception as e:
+                error_msg = str(e)
+                stack_trace = traceback.format_exc()
+                
+                self.logger.error(f"Error in workflow step {step_name}: {error_msg}")
+                
+                # 保存错误信息
+                workflow_results["step_results"][step_name] = {
+                    "status": "error",
+                    "error": {
+                        "message": error_msg,
+                        "traceback": stack_trace
+                    }
+                }
+                
+                # 检查是否继续工作流
+                if step.get("critical", False):
+                    self.logger.error(f"Critical step {step_name} failed, aborting workflow")
+                    workflow_results["status"] = "failed"
+                    break
+        
+        # 完成工作流
+        workflow_results["end_time"] = time.time()
+        if workflow_results["status"] != "failed":
+            workflow_results["status"] = "completed"
+            
+        execution_time = workflow_results["end_time"] - workflow_results["start_time"]
+        self.logger.info(f"Workflow {workflow_name} {workflow_results['status']} in {execution_time:.2f}s")
+        
+        return workflow_results
+    
+    def shutdown(self) -> None:
+        """
+        关闭代理管理器，保存状态并清理资源。
+        """
+        self.logger.info("Shutting down Agent Manager")
+        
+        # 保存所有代理状态
+        try:
+            self.save_all_agent_states()
+        except Exception as e:
+            self.logger.error(f"Error saving agent states during shutdown: {str(e)}")
+        
+        # 通知所有代理关闭
+        for name, agent in self.agents.items():
+            try:
+                agent.receive_message("shutdown", {}, "AgentManager")
+            except Exception as e:
+                self.logger.error(f"Error shutting down agent {name}: {str(e)}")
+        
+        self.logger.info("Agent Manager shutdown complete")

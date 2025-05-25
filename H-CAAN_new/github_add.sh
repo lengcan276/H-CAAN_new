@@ -12,7 +12,7 @@ Host github.com-hcaan
     User git
     IdentityFile ~/.ssh/hcaan_key
 然后修改git配置:
-bashgit remote set-url origin git@github.com-hcaan:lengcan276/H-CAAN.git
+git remote set-url origin git@github.com-hcaan:lengcan276/H-CAAN.git
 最后将新生成的公钥(~/.ssh/hcaan_key.pub)添加到GitHub的个人SSH密钥或部署密钥中。
 
 在H-CAAN的deployed keys中加入hcaan_key（名称命名正确）
@@ -30,3 +30,13 @@ git commit -m "Initial commit"
 
 # 推送
 git push -u origin main
+
+
+
+cd ~/h-caan/h-caan/H-CAAN_new
+������ 步骤 2：添加所有变更
+git add .
+������ 步骤 3：提交
+git commit -m "update project files with all components"
+git push -u origin main
+

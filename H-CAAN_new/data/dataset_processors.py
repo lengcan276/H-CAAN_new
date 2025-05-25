@@ -28,10 +28,20 @@ class SMILESTokenizer:
             self.load_vocab(vocab_path)
     
     def tokenize(self, smiles: str) -> List[str]:
-        """Tokenize a SMILES string into a list of tokens."""
-        tokens = [token for token in self.regex.findall(smiles)]
-        assert smiles == ''.join(tokens), f"{smiles} could not be joined after tokenization"
-        return tokens
+        """Tokenize a SMILES string using RDKit."""
+        try:
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                raise ValueError(f"Invalid SMILES: {smiles}")
+            # 使用RDKit的标准化SMILES
+            canonical_smiles = Chem.MolToSmiles(mol)
+            # 然后使用正则表达式分词
+            tokens = [token for token in self.regex.findall(canonical_smiles)]
+            return tokens
+        except Exception as e:
+            print(f"Error tokenizing SMILES {smiles}: {e}")
+            # 返回基本分词结果作为回退策略
+            return [c for c in smiles]
     
     def build_vocab(self, smiles_list: List[str], min_freq: int = 1) -> Dict[str, int]:
         """Build vocabulary from a list of SMILES strings."""

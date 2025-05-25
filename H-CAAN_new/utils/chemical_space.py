@@ -5,7 +5,13 @@ import seaborn as sns
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw, PandasTools
 from sklearn.decomposition import PCA, TruncatedSVD
-from sklearn.manifold import TSNE, UMAP
+from sklearn.manifold import TSNE
+# Import UMAP from umap-learn, not sklearn
+try:
+    import umap  # Import the correct UMAP package
+except ImportError:
+    print("Warning: umap-learn package not found. Install it with 'pip install umap-learn'")
+    
 from typing import List, Dict, Tuple, Union, Optional, Any
 import logging
 from scipy.spatial.distance import pdist, squareform
@@ -90,7 +96,12 @@ class ChemicalSpace:
             elif method.lower() == 'tsne':
                 model = TSNE(n_components=n_components, random_state=random_state)
             elif method.lower() == 'umap':
-                model = UMAP(n_components=n_components, random_state=random_state)
+                # Import UMAP from the correct package
+                try:
+                    model = umap.UMAP(n_components=n_components, random_state=random_state)
+                except (ImportError, AttributeError, NameError):
+                    logger.warning("UMAP not available. Falling back to PCA.")
+                    model = PCA(n_components=n_components, random_state=random_state)
             elif method.lower() == 'svd':
                 model = TruncatedSVD(n_components=n_components, random_state=random_state)
             else:
@@ -683,3 +694,91 @@ class ChemicalSpace:
         except Exception as e:
             logger.error(f"Error plotting property distribution: {str(e)}")
             return plt.figure()
+
+# Function to map molecules to chemical space (for external use)
+def chemical_space_mapping(molecules, method='pca', n_components=2, use_fingerprints=True, 
+                          fingerprint_radius=2, property_values=None, smiles=None):
+    """
+    Map molecules to chemical space and visualize the results
+    
+    Args:
+        molecules: List of RDKit molecules or SMILES strings
+        method: Dimensionality reduction method ('pca', 'tsne', 'umap')
+        n_components: Number of dimensions for reduction
+        use_fingerprints: Whether to use fingerprints or descriptors
+        fingerprint_radius: Radius for Morgan fingerprints
+        property_values: Optional property values for coloring points
+        smiles: Optional SMILES strings for annotations
+        
+    Returns:
+        Dict with reduced features, visualization and analysis
+    """
+    # Process input molecules
+    mols = []
+    if isinstance(molecules[0], str):
+        # Convert SMILES to molecules
+        for smile in molecules:
+            mol = Chem.MolFromSmiles(smile)
+            if mol:
+                mols.append(mol)
+    else:
+        mols = molecules
+        
+    # Filter valid molecules
+    valid_mols = [m for m in mols if m is not None]
+    
+    if not valid_mols:
+        logger.error("No valid molecules provided")
+        return {'error': 'No valid molecules provided'}
+    
+    # Generate features
+    if use_fingerprints:
+        # Generate Morgan fingerprints
+        features = []
+        for mol in valid_mols:
+            fp = AllChem.GetMorganFingerprintAsBitVect(mol, fingerprint_radius, nBits=2048)
+            features.append(np.array(list(fp)))
+        features = np.array(features)
+    else:
+        # Calculate descriptors
+        features = []
+        for mol in valid_mols:
+            # Calculate some basic descriptors
+            desc = [
+                Descriptors.MolWt(mol),
+                Descriptors.MolLogP(mol),
+                Descriptors.NumHDonors(mol),
+                Descriptors.NumHAcceptors(mol),
+                Descriptors.NumRotatableBonds(mol),
+                Descriptors.NumAromaticRings(mol),
+                Descriptors.FractionCSP3(mol),
+                Descriptors.TPSA(mol)
+            ]
+            features.append(desc)
+        features = np.array(features)
+    
+    # Perform dimensionality reduction
+    reduced_features = ChemicalSpace.dimensionality_reduction(
+        features, method=method, n_components=n_components
+    )
+    
+    # Create visualization
+    fig = ChemicalSpace.plot_chemical_space(
+        reduced_features, 
+        labels=property_values,
+        smiles=smiles
+    )
+    
+    # Identify clusters
+    cluster_labels = ChemicalSpace.identify_clusters(reduced_features)
+    
+    # Calculate diversity metrics
+    similarity_matrix = ChemicalSpace.calculate_pairwise_similarities(valid_mols)
+    diversity_metrics = ChemicalSpace.calculate_diversity_metrics(similarity_matrix)
+    
+    return {
+        'reduced_features': reduced_features,
+        'fig': fig,
+        'cluster_labels': cluster_labels,
+        'diversity_metrics': diversity_metrics
+    }

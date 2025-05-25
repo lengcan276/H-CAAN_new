@@ -6,7 +6,8 @@ from sklearn.model_selection import train_test_split
 from rdkit import Chem
 from rdkit.Chem import AllChem, Descriptors, Lipinski, QED
 from rdkit.Chem import PandasTools
-from sklearn.manifold import UMAP
+#from sklearn.manifold import UMAP
+from umap import UMAP
 import logging
 from tqdm import tqdm
 import tempfile

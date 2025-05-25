@@ -1,0 +1,127 @@
+{
+  "datasets": {
+    "Delaney": {
+      "best_model": "Chemprop",
+      "best_rmse": 0.58,
+      "best_r2": 0.91,
+      "models": {
+        "Chemprop": {
+          "rmse": 0.58,
+          "r2": 0.91,
+          "method": "GNN",
+          "paper": "Yang et al., 2019"
+        },
+        "AttentiveFP": {
+          "rmse": 0.62,
+          "r2": 0.89,
+          "method": "GNN+Attention",
+          "paper": "Xiong et al., 2019"
+        },
+        "MPNN": {
+          "rmse": 0.65,
+          "r2": 0.88,
+          "method": "MPNN",
+          "paper": "Gilmer et al., 2017"
+        }
+      }
+    },
+    "Lipophilicity": {
+      "best_model": "MolBERT",
+      "best_rmse": 0.56,
+      "best_r2": 0.92,
+      "models": {
+        "MolBERT": {
+          "rmse": 0.56,
+          "r2": 0.92,
+          "method": "Transformer",
+          "paper": "Fabian et al., 2020"
+        },
+        "Chemprop": {
+          "rmse": 0.61,
+          "r2": 0.9,
+          "method": "GNN",
+          "paper": "Yang et al., 2019"
+        },
+        "MPNN": {
+          "rmse": 0.69,
+          "r2": 0.87,
+          "method": "MPNN",
+          "paper": "Gilmer et al., 2017"
+        }
+      }
+    },
+    "BACE": {
+      "best_model": "MMFDL",
+      "best_auc": 0.91,
+      "best_accuracy": 0.87,
+      "models": {
+        "MMFDL": {
+          "auc": 0.91,
+          "accuracy": 0.87,
+          "method": "Multimodal",
+          "paper": "Lu et al., 2024"
+        },
+        "MolBERT": {
+          "auc": 0.88,
+          "accuracy": 0.85,
+          "method": "Transformer",
+          "paper": "Fabian et al., 2020"
+        },
+        "AttentiveFP": {
+          "auc": 0.86,
+          "accuracy": 0.84,
+          "method": "GNN+Attention",
+          "paper": "Xiong et al., 2019"
+        }
+      }
+    }
+  },
+  "methods": {
+    "GNN": {
+      "description": "Graph Neural Networks for molecular property prediction",
+      "key_papers": [
+        "Yang et al., 2019 - Analyzing learned molecular representations for property prediction",
+        "Kearnes et al., 2016 - Molecular graph convolutions: moving beyond fingerprints"
+      ],
+      "strengths": [
+        "Captures molecular structure",
+        "Handles variable-size molecules"
+      ],
+      "weaknesses": [
+        "May miss global patterns",
+        "Limited by graph representation"
+      ]
+    },
+    "Transformer": {
+      "description": "Transformer models applied to SMILES or other molecular representations",
+      "key_papers": [
+        "Fabian et al., 2020 - MolBERT: Molecular representation learning with language models",
+        "Chithrananda et al., 2020 - ChemBERTa: Large-scale self-supervised pretraining for molecular property prediction"
+      ],
+      "strengths": [
+        "Captures long-range dependencies",
+        "Learns from large unlabeled data"
+      ],
+      "weaknesses": [
+        "May lose structural information",
+        "Requires large datasets"
+      ]
+    },
+    "Multimodal": {
+      "description": "Models that integrate multiple molecular representations",
+      "key_papers": [
+        "Lu et al., 2024 - Multimodal fused deep learning for drug property prediction: Integrating chemical language and molecular graph",
+        "Abdel-Aty and Gould, 2022 - Large-Scale Distributed Training of Transformers for Chemical Fingerprinting"
+      ],
+      "strengths": [
+        "Leverages complementary information",
+        "More robust predictions"
+      ],
+      "weaknesses": [
+        "Complex architecture",
+        "Harder to train",
+        "May overfit on small datasets"
+      ]
+    }
+  }
+}

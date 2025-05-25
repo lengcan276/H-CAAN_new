@@ -775,3 +775,136 @@ def run_ablation_study(model, data_loaders, components_to_ablate, device, output
     ablation_study.plot_modality_weights()
     
     return ablation_study
+
+def analyze_ablation_results(results_path, output_dir=None):
+    """
+    Analyze ablation study results from a saved JSON file
+    
+    This function loads previously saved ablation study results
+    and generates visualizations and analysis.
+    
+    Args:
+        results_path: Path to the JSON file with ablation results
+        output_dir: Directory to save analysis results (default: same as results_path)
+        
+    Returns:
+        Dictionary with analysis results
+    """
+    # Set output directory
+    if output_dir is None:
+        output_dir = Path(results_path).parent
+    else:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Load results
+    with open(results_path, 'r') as f:
+        results = json.load(f)
+    
+    # Initialize analysis dictionary
+    analysis = {
+        'component_importance': {},
+        'ablation_summary': {},
+        'modality_weight_changes': {}
+    }
+    
+    # Extract component importance if available
+    if 'component_ranking' in results:
+        analysis['component_importance'] = results['component_ranking']
+    elif 'impact' in results:
+        # Calculate component importance from impact
+        component_importance = {}
+        for component, impact_data in results['impact'].items():
+            component_importance[component] = {
+                'importance_score': abs(impact_data['relative_impact']),
+                'raw_impact': impact_data['raw_impact'],
+                'relative_impact': impact_data['relative_impact']
+            }
+        analysis['component_importance'] = component_importance
+    
+    # Create ablation summary
+    if 'baseline' in results and 'ablations' in results:
+        # Get primary metric
+        task_type = results.get('config', {}).get('task_type', 'regression')
+        if task_type == 'regression':
+            primary_metric = 'r2'
+        else:
+            primary_metric = 'accuracy'
+        
+        # Get baseline metric value
+        baseline_value = results['baseline']['metrics'][primary_metric]
+        
+        # Summarize ablations
+        for ablation_name, ablation_data in results['ablations'].items():
+            ablation_value = ablation_data['metrics'][primary_metric]
+            
+            # Calculate relative change
+            if baseline_value != 0:
+                relative_change = (ablation_value - baseline_value) / baseline_value
+            else:
+                relative_change = 0
+            
+            analysis['ablation_summary'][ablation_name] = {
+                'metric': primary_metric,
+                'baseline_value': baseline_value,
+                'ablation_value': ablation_value,
+                'absolute_change': ablation_value - baseline_value,
+                'relative_change': relative_change
+            }
+    
+    # Analyze modality weight changes if available
+    if ('baseline' in results and 
+        'modality_weights' in results['baseline'] and 
+        results['baseline']['modality_weights'] is not None):
+        
+        baseline_weights = results['baseline']['modality_weights']
+        
+        for ablation_name, ablation_data in results['ablations'].items():
+            if 'modality_weights' in ablation_data and ablation_data['modality_weights'] is not None:
+                ablation_weights = ablation_data['modality_weights']
+                
+                # Calculate weight changes
+                weight_changes = {}
+                for modality, baseline_weight in baseline_weights.items():
+                    if modality in ablation_weights:
+                        ablation_weight = ablation_weights[modality]
+                        
+                        # Calculate absolute and relative change
+                        absolute_change = ablation_weight - baseline_weight
+                        if baseline_weight != 0:
+                            relative_change = absolute_change / baseline_weight
+                        else:
+                            relative_change = 0
+                        
+                        weight_changes[modality] = {
+                            'baseline_weight': baseline_weight,
+                            'ablation_weight': ablation_weight,
+                            'absolute_change': absolute_change,
+                            'relative_change': relative_change
+                        }
+                
+                analysis['modality_weight_changes'][ablation_name] = weight_changes
+    
+    # Generate visualizations
+    # Create AblationStudy object to reuse visualization methods
+    config = results.get('config', {})
+    ablation_study = AblationStudy(config, output_dir)
+    ablation_study.results = results
+    
+    # Generate plots
+    try:
+        ablation_study.plot_ablation_results(save_fig=True)
+        ablation_study.plot_component_importance(save_fig=True)
+        ablation_study.plot_correlation_matrix(save_fig=True)
+        ablation_study.plot_modality_weights(save_fig=True)
+    except Exception as e:
+        logger.error(f"Error generating plots: {str(e)}")
+    
+    # Save analysis results
+    analysis_path = output_dir / 'ablation_analysis.json'
+    with open(analysis_path, 'w') as f:
+        json.dump(analysis, f, indent=2)
+    
+    logger.info(f"Ablation analysis saved to {analysis_path}")
+    
+    return analysis
