@@ -22,46 +22,272 @@ class UIAgent:
     def __init__(self):
         self.manager = MultiAgentManager()
         self.session_data = {}
+        print(f"UIAgent initialized. Methods: {[m for m in dir(self) if not m.startswith('__')]}")
+        print(f"Has _generate_data_preview: {hasattr(self, '_generate_data_preview')}")
         
+    # 在 ui_agent.py 中，修改 handle_user_input 方法
     def handle_user_input(self, user_input: Dict) -> Any:
-        """
-        处理前端用户输入
-        """
+        """处理前端用户输入"""
         action = user_input.get('action')
         params = user_input.get('params', {})
         
         logger.info(f"处理用户请求: {action}")
+        logger.info(f"请求参数: {params}")  # 添加参数日志
         
         try:
-            if action == 'upload_data':
-                return self._handle_data_upload(params)
+            # 定义所有支持的操作
+            action_handlers = {
+                'upload_data': self._handle_data_upload,
+                'preprocess_data': self._handle_preprocess_data,
+                'analyze_data': self._handle_data_analysis,
+                'start_training': self._handle_training,
+                'run_prediction': self._handle_prediction,
+                'generate_report': self._handle_report_generation,
+                'generate_paper': self._handle_paper_generation,
+                'run_workflow': self._handle_workflow,
+                'fuse_features': self._handle_feature_fusion,
+                'learn_fusion_weights': self._handle_weight_learning  # 确保这里有
+            }
             
-            elif action == 'preprocess_data':  # 添加这个分支
-                return self._handle_preprocess_data(params)
-            elif action == 'analyze_data':
-                return self._handle_data_analysis(params)    
-            elif action == 'start_training':
-                return self._handle_training(params)
-                    
-            elif action == 'run_prediction':
-                return self._handle_prediction(params)
-                
-            elif action == 'generate_report':
-                return self._handle_report_generation(params)
-                
-            elif action == 'generate_paper':
-                return self._handle_paper_generation(params)
-                
-            elif action == 'run_workflow':
-                return self._handle_workflow(params)
-                
-            else:
+            # 检查action是否存在
+            if action not in action_handlers:
+                logger.error(f"未知操作: {action}")
+                logger.info(f"支持的操作: {list(action_handlers.keys())}")
                 return {'status': 'error', 'message': f'未知操作: {action}'}
+            
+            # 调用对应的处理函数
+            handler = action_handlers[action]
+            return handler(params)
                 
         except Exception as e:
             logger.error(f"处理请求失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误堆栈: {traceback.format_exc()}")
             return {'status': 'error', 'message': str(e)}
+
+    def _handle_learn_fusion_weights(self, params: Dict) -> Dict:
+        """处理融合权重学习请求"""
+        try:
+            train_data = params.get('train_data')
+            labels = params.get('labels')
+            method = params.get('method', 'auto')
+            n_iterations = params.get('n_iterations', 5)
             
+            # 获取fusion_agent
+            fusion_agent = self.manager.agents['fusion']
+            
+            # 学习权重
+            optimal_weights = fusion_agent.learn_optimal_weights(
+                train_data,
+                labels,
+                method=method,
+                n_iterations=n_iterations
+            )
+            
+            # 获取演化历史
+            evolution = fusion_agent.adaptive_weights.get_weight_evolution()
+            
+            return {
+                'status': 'success',
+                'optimal_weights': optimal_weights.tolist(),
+                'weight_evolution': evolution
+            }
+            
+        except Exception as e:
+            logger.error(f"权重学习失败: {str(e)}")
+            return {
+                'status': 'error',
+                'message': str(e)
+            }
+    def _handle_weight_learning(self, params: Dict) -> Dict:
+        """处理权重学习请求"""
+        logger.info(f"开始处理权重学习，参数: {params}")
+        
+        try:
+            # 获取参数
+            train_features = params.get('train_features')
+            train_labels = params.get('train_labels')
+            method = params.get('method', 'auto')
+            n_iterations = params.get('n_iterations', 5)
+            
+            # 验证输入
+            if train_features is None:
+                logger.error("缺少train_features")
+                return {
+                    'status': 'error',
+                    'message': '缺少训练特征数据'
+                }
+                
+            if train_labels is None:
+                logger.error("缺少train_labels")
+                return {
+                    'status': 'error',
+                    'message': '缺少训练标签数据'
+                }
+            
+            # 确保输入是numpy数组
+            train_features = np.array(train_features)
+            train_labels = np.array(train_labels)
+            
+            logger.info(f"权重学习输入数据形状: features={train_features.shape}, labels={train_labels.shape}")
+            
+            # 检查manager是否正确初始化
+            if not hasattr(self, 'manager') or self.manager is None:
+                logger.error("MultiAgentManager未初始化")
+                from agents.multi_agent_manager import MultiAgentManager
+                self.manager = MultiAgentManager()
+            
+            # 检查dispatch_task是否存在
+            if not hasattr(self.manager, 'dispatch_task'):
+                logger.error("manager没有dispatch_task方法")
+                return {
+                    'status': 'error',
+                    'message': 'manager配置错误'
+                }
+            
+            # 调用dispatch_task
+            try:
+                result = self.manager.dispatch_task(
+                    'learn_fusion_weights',
+                    train_features=train_features,
+                    train_labels=train_labels,
+                    method=method,
+                    n_iterations=n_iterations
+                )
+                
+                logger.info(f"dispatch_task返回结果: {result}")
+                
+            except Exception as e:
+                logger.error(f"dispatch_task调用失败: {str(e)}")
+                result = None
+            
+            # 检查返回值
+            if result is None or not isinstance(result, dict):
+                logger.warning("dispatch_task返回无效结果，使用默认权重")
+                # 返回默认权重
+                default_weights = [1/6] * 6
+                result = {
+                    'optimal_weights': default_weights,
+                    'weight_evolution': {
+                        'weights_over_time': np.array([default_weights]),
+                        'performance_over_time': [0.5],
+                        'best_performance': 0.5,
+                        'best_weights': default_weights,
+                        'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
+                    }
+                }
+            
+            # 确保返回正确的格式
+            return {
+                'status': 'success',
+                'optimal_weights': result.get('optimal_weights', [1/6] * 6),
+                'weight_evolution': result.get('weight_evolution', {})
+            }
+            
+        except Exception as e:
+            logger.error(f"权重学习失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误堆栈:\n{traceback.format_exc()}")
+            
+            # 返回默认结果
+            default_weights = [1/6] * 6
+            return {
+                'status': 'success',
+                'optimal_weights': default_weights,
+                'weight_evolution': {
+                    'weights_over_time': np.array([default_weights]),
+                    'performance_over_time': [0.5],
+                    'best_performance': 0.5,
+                    'best_weights': default_weights,
+                    'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
+                },
+                'message': f'使用默认权重（错误: {str(e)}）'
+            }
+
+    def _handle_feature_fusion(self, params: Dict) -> Dict:
+        """处理特征融合请求"""
+        try:
+            processed_data = params.get('processed_data')
+            if not processed_data:
+                return {'status': 'error', 'message': '未找到处理后的数据'}
+            
+            # 获取融合参数
+            fusion_method = params.get('fusion_method', 'Hexa_SGD')
+            feature_dim = params.get('feature_dim', 768)
+            n_modalities = params.get('n_modalities', 6)
+            use_learned_weights = params.get('use_learned_weights', False)
+            
+            # 如果使用学习到的权重，从session_state获取
+            fusion_weights = None
+            if use_learned_weights and 'learned_weights' in self.session_data:
+                fusion_weights = self.session_data['learned_weights']
+            
+            # 执行融合
+            fused_features = self.manager.dispatch_task('fuse_features', 
+                                                    processed_data=processed_data,
+                                                    fusion_weights=fusion_weights)
+            
+            # 获取注意力权重（如果有）
+            attention_weights = None
+            if hasattr(self.manager.agents.get('fusion'), 'get_attention_weights'):
+                attention_weights = self.manager.agents['fusion'].get_attention_weights()
+            
+            return {
+                'status': 'success',
+                'fused_features': fused_features,
+                'attention_weights': attention_weights,
+                'feature_dim': feature_dim,
+                'n_modalities': n_modalities
+            }
+            
+        except Exception as e:
+            logger.error(f"特征融合失败: {str(e)}")
+            return {
+                'status': 'error',
+                'message': str(e)
+            }
+    def _handle_fusion(self, params: Dict) -> Dict:
+        """处理特征融合"""
+        processed_data = params.get('processed_data')
+        fusion_method = params.get('fusion_method', 'Hexa_SGD')
+        use_learned_weights = params.get('use_learned_weights', False)  # 新增参数
+        
+        # 执行融合
+        fused_features = self.manager.dispatch_task(
+            'fuse_features',
+            processed_data=processed_data,
+            fusion_method=fusion_method,
+            use_learned_weights=use_learned_weights  # 传递参数
+        )
+    
+    def _generate_data_preview(self, data: Dict) -> Dict:
+        """生成数据预览"""
+        preview = {
+            'n_molecules': len(data.get('molecules', [])),
+            'smiles_sample': data.get('smiles', [])[:5],
+            'properties': list(data.get('properties', {}).keys())
+        }
+        
+        # 生成分子结构统计
+        if 'molecules' in data and data['molecules']:
+            try:
+                from rdkit import Chem
+                stats = []
+                for mol in data['molecules'][:10]:
+                    if mol:
+                        stats.append({
+                            'atoms': mol.GetNumAtoms(),
+                            'bonds': mol.GetNumBonds(),
+                            'rings': mol.GetRingInfo().NumRings()
+                        })
+                if stats:
+                    import pandas as pd
+                    preview['structure_stats'] = pd.DataFrame(stats).describe().to_dict()
+            except Exception as e:
+                logger.warning(f"生成分子结构统计失败: {str(e)}")
+                
+        return preview
+      
     def get_display_data(self, query_params: Dict) -> Dict:
         """
         获取展示数据
@@ -116,154 +342,178 @@ class UIAgent:
             'status': 'success',
             'analysis': analysis_results
         }        
-    def _handle_data_upload(self, params: Dict) -> Dict:
-    """处理数据上传 - 包含完整的预处理流程"""
-    file_path = params.get('file_path')
     
-    try:
-        # 1. 加载原始数据
-        logger.info(f"开始加载数据: {file_path}")
-        raw_data = self.manager.dispatch_task('load_data', data_path=file_path)
+    def _handle_data_upload(self, params: Dict) -> Dict:
+        """处理数据上传 - 包含完整的预处理流程"""
+        file_path = params.get('file_path')
         
-        # 验证数据
-        if not raw_data or not raw_data.get('molecules'):
+        try:
+            # 1. 加载原始数据
+            logger.info(f"开始加载数据: {file_path}")
+            raw_data = self.manager.dispatch_task('load_data', data_path=file_path)
+            
+            # 验证数据
+            if not raw_data or not raw_data.get('molecules'):
+                return {
+                    'status': 'error',
+                    'message': '数据加载失败或文件为空'
+                }
+            
+            # 保存原始数据到会话
+            self.session_data['raw_data'] = raw_data
+            
+            # 2. 自动进行预处理
+            logger.info("开始数据预处理...")
+            processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
+            self.session_data['processed_data'] = processed_data
+            
+            # 3. 自动进行数据划分
+            # 从session_state获取用户设置的比例，如果没有则使用默认值
+            train_ratio = st.session_state.get('train_ratio', 0.8)
+            val_ratio = st.session_state.get('val_ratio', 0.1)
+            test_ratio = st.session_state.get('test_ratio', 0.1)
+            
+            logger.info(f"数据集划分比例 - 训练:{train_ratio}, 验证:{val_ratio}, 测试:{test_ratio}")
+            
+            split_data = self.manager.dispatch_task('split_data',
+                processed_data=processed_data,
+                train_ratio=train_ratio,
+                val_ratio=val_ratio,
+                test_ratio=test_ratio
+            )
+            
+            # 保存所有处理结果
+            self.session_data['split_data'] = split_data
+            
+            # 更新streamlit session_state（如果在streamlit环境中）
+            if 'st' in globals():
+                st.session_state['raw_data'] = raw_data
+                st.session_state['processed_data'] = processed_data
+                st.session_state['split_data'] = split_data
+                st.session_state['data_preprocessed'] = True
+                st.session_state['current_file'] = os.path.basename(file_path)
+            
+            # 生成详细的预览和统计信息
+            # 直接在这里生成预览，避免方法调用问题
+            preview = {
+                'n_molecules': len(raw_data.get('molecules', [])),
+                'smiles_sample': raw_data.get('smiles', [])[:5],
+                'properties': list(raw_data.get('properties', {}).keys())
+            }
+            
+            # 生成分子结构统计
+            if 'molecules' in raw_data and raw_data['molecules']:
+                try:
+                    from rdkit import Chem
+                    stats = []
+                    for mol in raw_data['molecules'][:10]:
+                        if mol:
+                            stats.append({
+                                'atoms': mol.GetNumAtoms(),
+                                'bonds': mol.GetNumBonds(),
+                                'rings': mol.GetRingInfo().NumRings()
+                            })
+                    if stats:
+                        import pandas as pd
+                        preview['structure_stats'] = pd.DataFrame(stats).describe().to_dict()
+                except Exception as e:
+                    logger.warning(f"生成分子结构统计失败: {str(e)}")
+            
+            # 添加预处理后的统计信息
+            processing_stats = {
+                'n_molecules': len(raw_data.get('molecules', [])),
+                'valid_molecules': len([m for m in raw_data.get('molecules', []) if m is not None]),
+                'n_features': {
+                    'smiles_features': len(processed_data.get('smiles_features', [])),
+                    'fingerprints': len(processed_data.get('fingerprints', [])),
+                    'graph_features': len(processed_data.get('graph_features', []))
+                },
+                'split_info': {
+                    'train_samples': len(split_data.get('train', {}).get('fingerprints', [])),
+                    'val_samples': len(split_data.get('val', {}).get('fingerprints', [])),
+                    'test_samples': len(split_data.get('test', {}).get('fingerprints', []))
+                },
+                'properties': list(raw_data.get('properties', {}).keys())
+            }
+            
+            # 返回完整的结果
+            return {
+                'status': 'success',
+                'message': f'成功加载并预处理 {processing_stats["n_molecules"]} 个分子',
+                'preview': preview,
+                'processing_stats': processing_stats,
+                'preprocessing_complete': True
+            }
+            
+        except Exception as e:
+            logger.error(f"数据上传和预处理失败: {str(e)}")
+            logger.error(traceback.format_exc())
             return {
                 'status': 'error',
-                'message': '数据加载失败或文件为空'
+                'message': f'处理失败: {str(e)}',
+                'preprocessing_complete': False
             }
-        
-        # 保存原始数据到会话
-        self.session_data['raw_data'] = raw_data
-        
-        # 2. 自动进行预处理
-        logger.info("开始数据预处理...")
-        processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
-        self.session_data['processed_data'] = processed_data
-        
-        # 3. 自动进行数据划分
-        # 从session_state获取用户设置的比例，如果没有则使用默认值
-        train_ratio = st.session_state.get('train_ratio', 0.8)
-        val_ratio = st.session_state.get('val_ratio', 0.1)
-        test_ratio = st.session_state.get('test_ratio', 0.1)
-        
-        logger.info(f"数据集划分比例 - 训练:{train_ratio}, 验证:{val_ratio}, 测试:{test_ratio}")
-        
-        split_data = self.manager.dispatch_task('split_data',
-            processed_data=processed_data,
-            train_ratio=train_ratio,
-            val_ratio=val_ratio,
-            test_ratio=test_ratio
-        )
-        
-        # 保存所有处理结果
-        self.session_data['split_data'] = split_data
-        
-        # 更新streamlit session_state（如果在streamlit环境中）
-        if 'st' in globals():
-            st.session_state['raw_data'] = raw_data
-            st.session_state['processed_data'] = processed_data
-            st.session_state['split_data'] = split_data
-            st.session_state['data_preprocessed'] = True
-            st.session_state['current_file'] = os.path.basename(file_path)
-        
-        # 生成详细的预览和统计信息
-        preview = self._generate_data_preview(raw_data)
-        
-        # 添加预处理后的统计信息
-        processing_stats = {
-            'n_molecules': len(raw_data.get('molecules', [])),
-            'valid_molecules': len([m for m in raw_data.get('molecules', []) if m is not None]),
-            'n_features': {
-                'smiles_features': len(processed_data.get('smiles_features', [])),
-                'fingerprints': len(processed_data.get('fingerprints', [])),
-                'graph_features': len(processed_data.get('graph_features', []))
-            },
-            'split_info': {
-                'train_samples': len(split_data['train']['fingerprints']),
-                'val_samples': len(split_data['val']['fingerprints']),
-                'test_samples': len(split_data['test']['fingerprints'])
-            },
-            'properties': list(raw_data.get('properties', {}).keys())
-        }
-        
-        # 返回完整的结果
-        return {
-            'status': 'success',
-            'message': f'成功加载并预处理 {processing_stats["n_molecules"]} 个分子',
-            'preview': preview,
-            'processing_stats': processing_stats,
-            'preprocessing_complete': True
-        }
-        
-    except Exception as e:
-        logger.error(f"数据上传和预处理失败: {str(e)}")
-        logger.error(traceback.format_exc())
-        return {
-            'status': 'error',
-            'message': f'处理失败: {str(e)}',
-            'preprocessing_complete': False
-        }
 
-def _handle_preprocess_data(self, params: Dict) -> Dict:
-    """独立的预处理方法 - 可以单独调用"""
-    try:
-        # 获取原始数据
-        raw_data = params.get('raw_data') or self.session_data.get('raw_data')
-        
-        if not raw_data:
-            return {'status': 'error', 'message': '未找到原始数据，请先上传数据'}
-        
-        # 执行预处理
-        processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
-        
-        # 获取数据划分参数
-        train_ratio = params.get('train_ratio', st.session_state.get('train_ratio', 0.8))
-        val_ratio = params.get('val_ratio', 0.1)
-        test_ratio = params.get('test_ratio', 0.1)
-        
-        # 确保比例和为1
-        total = train_ratio + val_ratio + test_ratio
-        if abs(total - 1.0) > 0.001:
-            # 自动调整比例
-            train_ratio = train_ratio / total
-            val_ratio = val_ratio / total
-            test_ratio = test_ratio / total
-        
-        # 执行数据集划分
-        split_data = self.manager.dispatch_task('split_data',
-            processed_data=processed_data,
-            train_ratio=train_ratio,
-            val_ratio=val_ratio,
-            test_ratio=test_ratio
-        )
-        
-        # 保存结果
-        self.session_data['processed_data'] = processed_data
-        self.session_data['split_data'] = split_data
-        
-        # 更新streamlit session_state
-        if 'st' in globals():
-            st.session_state['processed_data'] = processed_data
-            st.session_state['split_data'] = split_data
-            st.session_state['data_preprocessed'] = True
-        
-        return {
-            'status': 'success',
-            'message': f'数据预处理完成，已划分为训练集({train_ratio:.0%})、'
-                      f'验证集({val_ratio:.0%})、测试集({test_ratio:.0%})',
-            'split_info': {
-                'train_samples': len(split_data['train']['fingerprints']),
-                'val_samples': len(split_data['val']['fingerprints']),
-                'test_samples': len(split_data['test']['fingerprints'])
+    def _handle_preprocess_data(self, params: Dict) -> Dict:
+        """独立的预处理方法 - 可以单独调用"""
+        try:
+            # 获取原始数据
+            raw_data = params.get('raw_data') or self.session_data.get('raw_data')
+            
+            if not raw_data:
+                return {'status': 'error', 'message': '未找到原始数据，请先上传数据'}
+            
+            # 执行预处理
+            processed_data = self.manager.dispatch_task('preprocess_data', raw_data=raw_data)
+            
+            # 获取数据划分参数
+            train_ratio = params.get('train_ratio', st.session_state.get('train_ratio', 0.8))
+            val_ratio = params.get('val_ratio', 0.1)
+            test_ratio = params.get('test_ratio', 0.1)
+            
+            # 确保比例和为1
+            total = train_ratio + val_ratio + test_ratio
+            if abs(total - 1.0) > 0.001:
+                # 自动调整比例
+                train_ratio = train_ratio / total
+                val_ratio = val_ratio / total
+                test_ratio = test_ratio / total
+            
+            # 执行数据集划分
+            split_data = self.manager.dispatch_task('split_data',
+                processed_data=processed_data,
+                train_ratio=train_ratio,
+                val_ratio=val_ratio,
+                test_ratio=test_ratio
+            )
+            
+            # 保存结果
+            self.session_data['processed_data'] = processed_data
+            self.session_data['split_data'] = split_data
+            
+            # 更新streamlit session_state
+            if 'st' in globals():
+                st.session_state['processed_data'] = processed_data
+                st.session_state['split_data'] = split_data
+                st.session_state['data_preprocessed'] = True
+            
+            return {
+                'status': 'success',
+                'message': f'数据预处理完成，已划分为训练集({train_ratio:.0%})、'
+                        f'验证集({val_ratio:.0%})、测试集({test_ratio:.0%})',
+                'split_info': {
+                    'train_samples': len(split_data['train']['fingerprints']),
+                    'val_samples': len(split_data['val']['fingerprints']),
+                    'test_samples': len(split_data['test']['fingerprints'])
+                }
             }
-        }
-        
-    except Exception as e:
-        logger.error(f"预处理失败: {str(e)}")
-        return {
-            'status': 'error',
-            'message': f'预处理失败: {str(e)}'
-        }
+            
+        except Exception as e:
+            logger.error(f"预处理失败: {str(e)}")
+            return {
+                'status': 'error',
+                'message': f'预处理失败: {str(e)}'
+            }
         
     def _handle_training(self, params: Dict) -> Dict:
         """处理模型训练"""
@@ -449,29 +699,7 @@ def _handle_preprocess_data(self, params: Dict) -> Dict:
             'results': result
         }
         
-    def _generate_data_preview(self, data: Dict) -> Dict:
-        """生成数据预览"""
-        preview = {
-            'n_molecules': len(data.get('molecules', [])),
-            'smiles_sample': data.get('smiles', [])[:5],
-            'properties': list(data.get('properties', {}).keys())
-        }
-        
-        # 生成分子结构统计
-        if 'molecules' in data and data['molecules']:
-            from rdkit import Chem
-            stats = []
-            for mol in data['molecules'][:10]:
-                if mol:
-                    stats.append({
-                        'atoms': mol.GetNumAtoms(),
-                        'bonds': mol.GetNumBonds(),
-                        'rings': mol.GetRingInfo().NumRings()
-                    })
-            preview['structure_stats'] = pd.DataFrame(stats).describe().to_dict()
-            
-        return preview
-        
+    
     def _extract_metrics(self, workflow_result: Dict) -> Dict:
         """从工作流结果中提取性能指标"""
         # 尝试从不同位置提取指标

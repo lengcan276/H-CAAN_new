@@ -370,7 +370,7 @@ def show_preview_tab():
                 st.warning("⚠️ 未预处理")
     
     # 显示预处理详情（新增部分）
-    if st.session_state.get('data_preprocessed', False) and 'preprocess_result' in st.session_state.uploaded_data:
+    if st.session_state.get('data_preprocessed', False) and 'uploaded_data' in st.session_state and 'preprocess_result' in st.session_state.uploaded_data:
         preprocess_result = st.session_state.uploaded_data.get('preprocess_result', {})
         
         # 显示数据集划分信息

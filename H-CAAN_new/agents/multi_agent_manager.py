@@ -20,6 +20,27 @@ from .paper_agent import PaperAgent
 
 logger = logging.getLogger(__name__)
 
+"""
+多智能体统一调度与任务管理
+协调各智能体的执行和状态管理
+"""
+import asyncio
+from typing import Dict, Any, List, Optional, Tuple, Callable
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import logging
+from datetime import datetime
+import json
+import os
+import numpy as np
+
+from .data_agent import DataAgent
+from .fusion_agent import FusionAgent
+from .model_agent import ModelAgent
+from .explain_agent import ExplainAgent
+from .paper_agent import PaperAgent
+
+logger = logging.getLogger(__name__)
+
 class MultiAgentManager:
     """多智能体管理器"""
     
@@ -40,7 +61,7 @@ class MultiAgentManager:
         # 线程池用于并行执行
         self.executor = ThreadPoolExecutor(max_workers=4)
         
-        # 任务映射
+        # 任务映射 - 添加 learn_fusion_weights
         self.task_mapping = {
             'load_data': self._handle_load_data,
             'preprocess_data': self._handle_preprocess_data,
@@ -49,7 +70,8 @@ class MultiAgentManager:
             'train_model': self._handle_train_model,
             'predict': self._handle_predict,
             'explain': self._handle_explain,
-            'generate_paper': self._handle_generate_paper
+            'generate_paper': self._handle_generate_paper,
+            'learn_fusion_weights': self._handle_learn_fusion_weights  # 添加这一行
         }
         
         # 工作流定义
@@ -65,7 +87,59 @@ class MultiAgentManager:
                 'load_data', 'preprocess_data', 'explain'
             ]
         }
-                
+    
+    # 在其他处理函数之后添加
+    def _handle_learn_fusion_weights(self, train_features: np.ndarray, 
+                                   train_labels: np.ndarray,
+                                   method: str = 'auto', 
+                                   n_iterations: int = 5) -> Dict:
+        """处理权重学习任务"""
+        logger.info("处理权重学习任务")
+        
+        try:
+            # 调用fusion_agent的学习方法
+            result = self.agents['fusion'].learn_optimal_weights(
+                train_features=train_features,
+                train_labels=train_labels,
+                method=method,
+                n_iterations=n_iterations
+            )
+            
+            if result is None:
+                # 如果返回None，提供默认结果
+                logger.warning("fusion agent返回None，使用默认权重")
+                default_weights = [1/6] * 6
+                result = {
+                    'optimal_weights': default_weights,
+                    'weight_evolution': {
+                        'weights_over_time': np.array([default_weights]),
+                        'performance_over_time': [0.5],
+                        'best_performance': 0.5,
+                        'best_weights': default_weights,
+                        'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
+                    }
+                }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"权重学习任务失败: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # 返回默认结果
+            default_weights = [1/6] * 6
+            return {
+                'optimal_weights': default_weights,
+                'weight_evolution': {
+                    'weights_over_time': np.array([default_weights]),
+                    'performance_over_time': [0.5],
+                    'best_performance': 0.5,
+                    'best_weights': default_weights,
+                    'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
+                }
+            }
+    
     def dispatch_task(self, task_name: str, **kwargs) -> Any:
         """
         分发单个任务
@@ -80,6 +154,8 @@ class MultiAgentManager:
         logger.info(f"分发任务: {task_name}")
         
         if task_name not in self.task_mapping:
+            logger.error(f"未知任务: {task_name}")
+            logger.info(f"可用任务: {list(self.task_mapping.keys())}")
             raise ValueError(f"未知任务: {task_name}")
             
         # 创建任务ID

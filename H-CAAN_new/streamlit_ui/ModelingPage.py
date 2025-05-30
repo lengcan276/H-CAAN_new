@@ -208,6 +208,23 @@ def show_training_tab(ui_agent):
                 # 获取目标属性（从配置部分获取）
                 # 注意：这里应该使用之前在配置部分选择的target_property
                 # 而不是重新计算
+                if 'selected_target_property' in st.session_state:
+                    target_property = st.session_state.selected_target_property
+                else:
+                    # 如果没有保存的选择，使用默认值
+                    preview_data = st.session_state.uploaded_data.get('preview', {})
+                    available_properties = preview_data.get('properties', [])
+                    target_properties = [prop for prop in available_properties 
+                                    if prop.lower() not in ['smiles', 'molecular_weight', 'id', 'name']]
+                    if target_properties:
+                        target_property = target_properties[0]  # 使用第一个可用属性
+                    else:
+                        target_property = 'target'  # 默认值
+                
+                # 获取其他训练参数（从配置部分）
+                learning_rate = st.session_state.get('learning_rate', 0.001)
+                batch_size = st.session_state.get('batch_size', 32)
+                epochs = st.session_state.get('epochs', 100)
                 target_property = st.session_state.get('selected_target_property', target_property)
                 
                 # 获取其他训练参数（从配置部分）
