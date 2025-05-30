@@ -3,28 +3,6 @@
 协调各智能体的执行和状态管理
 """
 import asyncio
-#from typing import Dict, Any, List, Optional, Callable
-from typing import Dict, Any, List, Optional, Tuple,Callable
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-import logging
-from datetime import datetime
-import json
-import os
-import numpy as np
-
-from .data_agent import DataAgent
-from .fusion_agent import FusionAgent
-from .model_agent import ModelAgent
-from .explain_agent import ExplainAgent
-from .paper_agent import PaperAgent
-
-logger = logging.getLogger(__name__)
-
-"""
-多智能体统一调度与任务管理
-协调各智能体的执行和状态管理
-"""
-import asyncio
 from typing import Dict, Any, List, Optional, Tuple, Callable
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import logging
@@ -61,7 +39,7 @@ class MultiAgentManager:
         # 线程池用于并行执行
         self.executor = ThreadPoolExecutor(max_workers=4)
         
-        # 任务映射 - 添加 learn_fusion_weights
+        # 任务映射 - 添加消融实验相关任务
         self.task_mapping = {
             'load_data': self._handle_load_data,
             'preprocess_data': self._handle_preprocess_data,
@@ -71,7 +49,13 @@ class MultiAgentManager:
             'predict': self._handle_predict,
             'explain': self._handle_explain,
             'generate_paper': self._handle_generate_paper,
-            'learn_fusion_weights': self._handle_learn_fusion_weights  # 添加这一行
+            'learn_fusion_weights': self._handle_learn_fusion_weights,
+            
+            # 添加消融实验任务
+            'comprehensive_ablation': self._handle_comprehensive_ablation,
+            'conditional_ablation': self._handle_conditional_ablation,
+            'incremental_ablation': self._handle_incremental_ablation,
+            'ablation_study': self._handle_ablation_study
         }
         
         # 工作流定义
@@ -85,19 +69,260 @@ class MultiAgentManager:
             ],
             'analysis_only': [
                 'load_data', 'preprocess_data', 'explain'
+            ],
+            # 添加消融实验工作流
+            'ablation_analysis': [
+                'load_data', 'preprocess_data', 'split_data', 
+                'learn_fusion_weights', 'comprehensive_ablation'
             ]
         }
     
-    # 在其他处理函数之后添加
-    def _handle_learn_fusion_weights(self, train_features: np.ndarray, 
-                                   train_labels: np.ndarray,
+    def _handle_comprehensive_ablation(self, modal_features: List[np.ndarray] = None,
+                                     labels: np.ndarray = None,
+                                     learned_weights: np.ndarray = None,
+                                     **kwargs) -> Dict:
+        """处理综合消融实验"""
+        logger.info("执行综合消融实验")
+        
+        try:
+            # 如果没有提供modal_features，尝试从已有数据创建
+            if modal_features is None:
+                # 尝试从最近的任务结果中获取数据
+                if hasattr(self, '_last_processed_data'):
+                    base_features = self._last_processed_data.get('fingerprints')
+                    if base_features is not None:
+                        modal_features = self._create_modal_features_from_base(np.array(base_features))
+                else:
+                    raise ValueError("没有可用的特征数据进行消融实验")
+            
+            # 确保输入是numpy数组
+            if not isinstance(modal_features[0], np.ndarray):
+                modal_features = [np.array(f) for f in modal_features]
+            if labels is not None and not isinstance(labels, np.ndarray):
+                labels = np.array(labels)
+            if learned_weights is not None and not isinstance(learned_weights, np.ndarray):
+                learned_weights = np.array(learned_weights)
+            
+            # 调用fusion agent的综合消融方法
+            return self.agents['fusion'].adaptive_weights.comprehensive_ablation_study(
+                modal_features, labels, learned_weights
+            )
+            
+        except Exception as e:
+            logger.error(f"综合消融实验失败: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
+    
+    def _handle_conditional_ablation(self, modal_features: List[np.ndarray] = None,
+                                   labels: np.ndarray = None,
+                                   learned_weights: np.ndarray = None,
+                                   ablation_type: str = 'mask',
+                                   **kwargs) -> Dict:
+        """处理条件消融实验"""
+        logger.info(f"执行条件消融实验，类型: {ablation_type}")
+        
+        try:
+            # 数据准备逻辑同上
+            if modal_features is None:
+                if hasattr(self, '_last_processed_data'):
+                    base_features = self._last_processed_data.get('fingerprints')
+                    if base_features is not None:
+                        modal_features = self._create_modal_features_from_base(np.array(base_features))
+                else:
+                    raise ValueError("没有可用的特征数据进行消融实验")
+            
+            # 确保输入格式正确
+            if not isinstance(modal_features[0], np.ndarray):
+                modal_features = [np.array(f) for f in modal_features]
+            if labels is not None and not isinstance(labels, np.ndarray):
+                labels = np.array(labels)
+            if learned_weights is not None and not isinstance(learned_weights, np.ndarray):
+                learned_weights = np.array(learned_weights)
+            
+            # 调用fusion agent的条件消融方法
+            return self.agents['fusion'].adaptive_weights.conditional_ablation(
+                modal_features, labels, learned_weights, ablation_type
+            )
+            
+        except Exception as e:
+            logger.error(f"条件消融实验失败: {str(e)}")
+            raise
+
+    def _handle_incremental_ablation(self, modal_features: List[np.ndarray] = None,
+                                   labels: np.ndarray = None,
+                                   learned_weights: np.ndarray = None,
+                                   **kwargs) -> Dict:
+        """处理增量消融实验（从单模态逐步添加）"""
+        logger.info("执行增量消融实验")
+        
+        try:
+            # 数据准备
+            if modal_features is None:
+                if hasattr(self, '_last_processed_data'):
+                    base_features = self._last_processed_data.get('fingerprints')
+                    if base_features is not None:
+                        modal_features = self._create_modal_features_from_base(np.array(base_features))
+                else:
+                    raise ValueError("没有可用的特征数据进行消融实验")
+            
+            # 格式转换
+            if not isinstance(modal_features[0], np.ndarray):
+                modal_features = [np.array(f) for f in modal_features]
+            if labels is not None and not isinstance(labels, np.ndarray):
+                labels = np.array(labels)
+            if learned_weights is not None and not isinstance(learned_weights, np.ndarray):
+                learned_weights = np.array(learned_weights)
+            
+            # 如果fusion agent有incremental_ablation方法则调用，否则使用综合消融
+            if hasattr(self.agents['fusion'].adaptive_weights, 'incremental_ablation'):
+                return self.agents['fusion'].adaptive_weights.incremental_ablation(
+                    modal_features, labels, learned_weights
+                )
+            else:
+                # 使用综合消融作为替代
+                logger.info("使用综合消融替代增量消融")
+                return self.agents['fusion'].adaptive_weights.comprehensive_ablation_study(
+                    modal_features, labels, learned_weights
+                )
+                
+        except Exception as e:
+            logger.error(f"增量消融实验失败: {str(e)}")
+            raise
+
+    def _handle_ablation_study(self, modal_features: List[np.ndarray] = None,
+                              labels: np.ndarray = None,
+                              learned_weights: np.ndarray = None,
+                              ablation_mode: str = '综合消融',
+                              ablation_type: str = 'mask',
+                              **kwargs) -> Dict:
+        """统一的消融实验处理入口"""
+        logger.info(f"执行消融实验，模式: {ablation_mode}")
+        
+        try:
+            # 根据模式调用相应的处理方法
+            if ablation_mode == '综合消融':
+                return self._handle_comprehensive_ablation(
+                    modal_features, labels, learned_weights, **kwargs
+                )
+            elif ablation_mode == '条件消融':
+                return self._handle_conditional_ablation(
+                    modal_features, labels, learned_weights, ablation_type, **kwargs
+                )
+            elif ablation_mode == '增量消融':
+                return self._handle_incremental_ablation(
+                    modal_features, labels, learned_weights, **kwargs
+                )
+            else:
+                raise ValueError(f"未知的消融模式: {ablation_mode}")
+                
+        except Exception as e:
+            logger.error(f"消融实验失败: {str(e)}")
+            raise
+
+    def _create_modal_features_from_base(self, base_features: np.ndarray) -> List[np.ndarray]:
+        """从基础特征创建六模态特征（用于演示）"""
+        logger.info("从基础特征创建六模态特征")
+        
+        n_samples, n_features = base_features.shape
+        modal_features = []
+        
+        # 模态1：原始特征（MFBERT）
+        modal_features.append(base_features)
+        
+        # 模态2-6：通过不同变换生成
+        # 在实际应用中，这些应该是真实的不同模态特征
+        try:
+            from sklearn.decomposition import PCA
+            from sklearn.random_projection import GaussianRandomProjection
+            from sklearn.preprocessing import StandardScaler
+            
+            # 模态2：PCA变换（ChemBERTa）
+            if n_samples > 1 and n_features > 1:
+                pca = PCA(n_components=min(n_features, n_samples-1), random_state=42)
+                modal_features.append(pca.fit_transform(base_features))
+            else:
+                modal_features.append(base_features * 0.95)
+            
+            # 模态3：随机投影（Transformer）
+            grp = GaussianRandomProjection(n_components=n_features, random_state=42)
+            modal_features.append(grp.fit_transform(base_features))
+            
+            # 模态4：标准化+小扰动（GCN）
+            scaler = StandardScaler()
+            scaled_features = scaler.fit_transform(base_features)
+            modal_features.append(scaled_features + np.random.normal(0, 0.05, scaled_features.shape))
+            
+            # 模态5：非线性变换（GraphTransformer）
+            modal_features.append(np.tanh(base_features * 0.5))
+            
+            # 模态6：添加噪声（BiGRU）
+            noise_features = base_features + np.random.normal(0, 0.1, base_features.shape)
+            modal_features.append(noise_features)
+            
+        except Exception as e:
+            logger.warning(f"创建某些模态特征失败，使用简单变换: {str(e)}")
+            # 使用简单的线性变换作为备选
+            while len(modal_features) < 6:
+                factor = 0.9 + 0.02 * len(modal_features)
+                modal_features.append(base_features * factor)
+        
+        logger.info(f"成功创建 {len(modal_features)} 个模态特征")
+        return modal_features
+    
+    def _handle_learn_fusion_weights(self, train_features: np.ndarray = None, 
+                                   train_labels: np.ndarray = None,
                                    method: str = 'auto', 
-                                   n_iterations: int = 5) -> Dict:
+                                   n_iterations: int = 5,
+                                   **kwargs) -> Dict:
         """处理权重学习任务"""
         logger.info("处理权重学习任务")
         
         try:
-            # 调用fusion_agent的学习方法
+        # 参数验证
+            if train_features is None or train_labels is None:
+                # 尝试从保存的数据中获取
+                if hasattr(self, '_last_split_data') and self._last_split_data is not None:
+                    split_data = self._last_split_data
+                    
+                    # 添加更多检查
+                    if 'train' not in split_data:
+                        raise ValueError("训练数据不存在于split_data中")
+                    
+                    train_data = split_data['train']
+                    
+                    # 检查fingerprints
+                    if 'fingerprints' not in train_data or train_data['fingerprints'] is None:
+                        raise ValueError("特征数据不存在")
+                    
+                    train_features = np.array(train_data['fingerprints'])
+                    
+                    # 检查labels
+                    if 'labels' not in train_data or train_data['labels'] is None:
+                        raise ValueError("标签数据不存在")
+                    
+                    # 安全地提取标签
+                    if isinstance(train_data['labels'], dict):
+                        # 获取第一个可用的标签
+                        label_values = list(train_data['labels'].values())
+                        if not label_values:
+                            raise ValueError("标签字典为空")
+                        train_labels = np.array(label_values[0])
+                    else:
+                        train_labels = np.array(train_data['labels'])
+                else:
+                    raise ValueError("缺少训练数据且无法从历史数据中获取")
+            
+            # 确保是numpy数组
+            if not isinstance(train_features, np.ndarray):
+                train_features = np.array(train_features)
+            if not isinstance(train_labels, np.ndarray):
+                train_labels = np.array(train_labels)
+            
+            # 创建六模态特征
+            modal_features = self._create_modal_features_from_base(train_features)
+            
+            # 调用fusion agent的学习方法
             result = self.agents['fusion'].learn_optimal_weights(
                 train_features=train_features,
                 train_labels=train_labels,
@@ -105,20 +330,9 @@ class MultiAgentManager:
                 n_iterations=n_iterations
             )
             
-            if result is None:
-                # 如果返回None，提供默认结果
-                logger.warning("fusion agent返回None，使用默认权重")
-                default_weights = [1/6] * 6
-                result = {
-                    'optimal_weights': default_weights,
-                    'weight_evolution': {
-                        'weights_over_time': np.array([default_weights]),
-                        'performance_over_time': [0.5],
-                        'best_performance': 0.5,
-                        'best_weights': default_weights,
-                        'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
-                    }
-                }
+            # 保存学习到的权重，供后续消融实验使用
+            if result and 'optimal_weights' in result:
+                self._last_learned_weights = result['optimal_weights']
             
             return result
             
@@ -139,7 +353,6 @@ class MultiAgentManager:
                     'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
                 }
             }
-    
     def dispatch_task(self, task_name: str, **kwargs) -> Any:
         """
         分发单个任务
@@ -181,9 +394,12 @@ class MultiAgentManager:
     def _handle_split_data(self, processed_data: Dict, train_ratio: float, 
                         val_ratio: float, test_ratio: float) -> Dict:
         """处理数据集划分任务"""
-        return self.agents['data'].split_data(
+        result = self.agents['data'].split_data(
             processed_data, train_ratio, val_ratio, test_ratio
-        )        
+        )
+        # 保存划分后的数据
+        self._last_split_data = result
+        return result        
     def manage_workflow(self, workflow_name: str, input_data: Dict) -> Any:
         """
         管理工作流执行
@@ -259,7 +475,10 @@ class MultiAgentManager:
         
     def _handle_preprocess_data(self, raw_data: Dict) -> Dict:
         """处理数据预处理任务"""
-        return self.agents['data'].preprocess_data(raw_data)
+        result = self.agents['data'].preprocess_data(raw_data)
+        # 保存处理后的数据供消融实验使用
+        self._last_processed_data = result
+        return result
         
     def _handle_fuse_features(self, processed_data: Dict) -> np.ndarray:
         """处理特征融合任务"""

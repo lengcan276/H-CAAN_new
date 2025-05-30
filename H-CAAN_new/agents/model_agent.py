@@ -19,6 +19,33 @@ class EnsembleModel:
     """集成模型，结合多个基模型"""
     
     def __init__(self):
+        self.use_gpu = use_gpu and torch.cuda.is_available()
+        
+        if self.use_gpu:
+            try:
+                import xgboost as xgb
+                # 使用支持GPU的模型
+                self.models = {
+                    'xgb': xgb.XGBRegressor(
+                        n_estimators=100, 
+                        tree_method='gpu_hist',
+                        gpu_id=0,
+                        random_state=42
+                    ),
+                    'rf': RandomForestRegressor(n_estimators=100, random_state=42),
+                    'gpr': GaussianProcessRegressor(random_state=42)
+                }
+                logger.info("使用GPU加速的XGBoost")
+            except ImportError:
+                self.use_gpu = False
+                
+        if not self.use_gpu:
+            # 原有的CPU模型
+            self.models = {
+                'rf': RandomForestRegressor(n_estimators=100, random_state=42),
+                'gbm': GradientBoostingRegressor(n_estimators=100, random_state=42),
+                'gpr': GaussianProcessRegressor(random_state=42)
+            }
         self.models = {
             'rf': RandomForestRegressor(n_estimators=100, random_state=42),
             'gbm': GradientBoostingRegressor(n_estimators=100, random_state=42),

@@ -46,7 +46,8 @@ class UIAgent:
                 'generate_paper': self._handle_paper_generation,
                 'run_workflow': self._handle_workflow,
                 'fuse_features': self._handle_feature_fusion,
-                'learn_fusion_weights': self._handle_weight_learning  # 确保这里有
+                'learn_fusion_weights': self._handle_weight_learning,  # 确保这里有
+                'ablation_study': self._handle_ablation_study
             }
             
             # 检查action是否存在
@@ -64,7 +65,70 @@ class UIAgent:
             import traceback
             logger.error(f"详细错误堆栈: {traceback.format_exc()}")
             return {'status': 'error', 'message': str(e)}
-
+        
+    def show_adaptive_weight_learning():
+        """自适应权重学习部分"""
+        st.markdown("### 🎯 自适应权重学习")
+        
+        # 检查是否有必要的数据
+        if 'split_data' not in st.session_state:
+            st.warning("⚠️ 请先完成数据预处理和划分，才能进行权重学习")
+            return
+        
+        # 添加数据验证
+        if st.session_state['split_data'] is None:
+            st.error("数据为空，请重新加载数据")
+            return
+        
+        # 检查训练数据是否存在
+        if 'train' not in st.session_state['split_data']:
+            st.error("训练数据不存在")
+            return
+    def _handle_ablation_study(self, params: Dict) -> Dict:
+        """处理消融实验请求"""
+        try:
+            modal_features = [np.array(f) for f in params.get('modal_features', [])]
+            labels = np.array(params.get('labels'))
+            learned_weights = np.array(params.get('learned_weights'))
+            ablation_mode = params.get('ablation_mode', '综合消融')
+            ablation_type = params.get('ablation_type')
+            
+            # 获取fusion_agent
+            fusion_agent = self.manager.agents['fusion']
+            
+            if ablation_mode == "综合消融":
+                # 执行综合消融实验
+                results = fusion_agent.adaptive_weights.comprehensive_ablation_study(
+                    modal_features, labels, learned_weights
+                )
+            elif ablation_mode == "条件消融":
+                # 执行条件消融
+                ablation_type_map = {
+                    "mask（随机遮盖）": "mask",
+                    "noise（噪声替换）": "noise",
+                    "mean（均值替换）": "mean"
+                }
+                results = fusion_agent.adaptive_weights.conditional_ablation(
+                    modal_features, labels, learned_weights,
+                    ablation_type_map.get(ablation_type, "mask")
+                )
+            else:
+                # 增量消融（从单模态开始逐步添加）
+                results = fusion_agent.adaptive_weights.incremental_ablation(
+                    modal_features, labels, learned_weights
+                )
+            
+            return {
+                'status': 'success',
+                'results': results
+            }
+            
+        except Exception as e:
+            logger.error(f"消融实验失败: {str(e)}")
+            return {
+                'status': 'error',
+                'message': str(e)
+            }
     def _handle_learn_fusion_weights(self, params: Dict) -> Dict:
         """处理融合权重学习请求"""
         try:
@@ -109,8 +173,78 @@ class UIAgent:
             train_labels = params.get('train_labels')
             method = params.get('method', 'auto')
             n_iterations = params.get('n_iterations', 5)
+            train_data = st.session_state.get('split_data', {}).get('train', {})
             
+            # 改进：动态获取目标属性名称
+            target_property = params.get('target_property')
+            
+            # 如果没有指定目标属性，尝试自动检测
+            if not target_property and train_data:
+                labels_data = train_data.get('labels')
+                if isinstance(labels_data, dict):
+                    # 获取所有可用的标签属性
+                    available_properties = list(labels_data.keys())
+                    logger.info(f"可用的目标属性: {available_properties}")
+                    
+                    # 尝试常见的目标属性名称
+                    common_names = ['target', 'exp', 'y', 'label', 'value', 'property']
+                    for name in common_names:
+                        if name in available_properties:
+                            target_property = name
+                            logger.info(f"自动选择目标属性: {target_property}")
+                            break
+                    
+                    # 如果还没找到，使用第一个可用的属性
+                    if not target_property and available_properties:
+                        target_property = available_properties[0]
+                        logger.info(f"使用默认目标属性: {target_property}")
+            
+            # 检查train_data是否为None
+            if not train_data:
+                return {
+                    'status': 'error',
+                    'message': '训练数据不存在'
+                }
+            
+            # 修复标签提取方式
+            labels_data = train_data.get('labels')
+            
+            if labels_data is None:
+                logger.error("标签数据为None")
+                return {
+                    'status': 'error',
+                    'message': '标签数据为空'
+                }
+            
+            if isinstance(labels_data, dict):
+                # 如果还是没有目标属性，返回错误并提示可用的属性
+                if not target_property:
+                    available_props = list(labels_data.keys())
+                    return {
+                        'status': 'error',
+                        'message': f'未指定目标属性。可用的属性: {", ".join(available_props)}'
+                    }
+                
+                # 检查目标属性是否存在
+                if target_property not in labels_data:
+                    logger.error(f"目标属性 '{target_property}' 不存在于标签数据中")
+                    logger.error(f"可用的属性: {list(labels_data.keys())}")
+                    return {
+                        'status': 'error',
+                        'message': f'目标属性 {target_property} 不存在。可用的属性: {", ".join(labels_data.keys())}'
+                    }
+                train_labels = np.array(labels_data[target_property])
+                
+            elif isinstance(labels_data, (list, np.ndarray)):
+                # 如果标签是数组形式，直接使用
+                train_labels = np.array(labels_data)
+            else:
+                return {
+                    'status': 'error',
+                    'message': f'标签数据格式不正确: {type(labels_data)}'
+                }
             # 验证输入
+            
             if train_features is None:
                 logger.error("缺少train_features")
                 return {
@@ -520,7 +654,7 @@ class UIAgent:
         try:
             # 提取参数
             data_path = params.get('data_path')
-            target_property = params.get('target_property', 'target')
+            target_property = params.get('target_property', 'exp')
             train_params = params.get('train_params', {})
             
             # 确保target_property传递到train_params中

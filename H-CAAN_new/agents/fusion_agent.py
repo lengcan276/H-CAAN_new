@@ -29,10 +29,293 @@ class AdaptiveFusionWeights:
         self.modal_names = ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
         self.best_weights = None
         self.best_performance = -float('inf')
+        self.ablation_results = {}
+        self.modal_interactions = {}
+        self.ablation_history = []
         
         # 初始化权重
         self.current_weights = np.ones(n_modals) / n_modals
+    def comprehensive_ablation_study(self, modal_features: List[np.ndarray], 
+                                   labels: np.ndarray, 
+                                   learned_weights: np.ndarray = None) -> Dict:
+        """
+        综合消融实验：基于学习到的权重进行系统化消融
         
+        Args:
+            modal_features: 各模态特征
+            labels: 目标标签
+            learned_weights: 自适应学习得到的权重（如果没有则先学习）
+            
+        Returns:
+            消融实验综合报告
+        """
+        logger.info("开始综合消融实验...")
+        
+        # 如果没有提供权重，先进行自适应学习
+        if learned_weights is None:
+            learned_weights = self.learn_weights(modal_features, labels, method='auto')
+        
+        # 数据划分
+        indices = np.arange(len(labels))
+        train_idx, val_idx = train_test_split(indices, test_size=0.2, random_state=42)
+        
+        results = {
+            'baseline': {},
+            'single_modal': {},
+            'progressive_ablation': {},
+            'top_k_modals': {},
+            'interaction_effects': {},
+            'summary': {}
+        }
+        
+        # 1. 基准性能（全模态）
+        logger.info("评估基准性能...")
+        baseline_perf = self._evaluate_modal_combination(
+            modal_features, labels, train_idx, val_idx, 
+            list(range(self.n_modals)), learned_weights
+        )
+        results['baseline'] = {
+            'modals': self.modal_names,
+            'weights': learned_weights.tolist(),
+            'performance': baseline_perf
+        }
+        
+        # 2. 单模态性能评估
+        logger.info("评估单模态性能...")
+        for i in range(self.n_modals):
+            perf = self._evaluate_modal_combination(
+                modal_features, labels, train_idx, val_idx, [i]
+            )
+            results['single_modal'][self.modal_names[i]] = {
+                'performance': perf,
+                'contribution': baseline_perf['r2'] - perf['r2']
+            }
+        
+        # 3. 渐进式消融（按权重从小到大去除）
+        logger.info("执行渐进式消融...")
+        sorted_indices = np.argsort(learned_weights)
+        remaining_modals = list(range(self.n_modals))
+        
+        for i, idx in enumerate(sorted_indices):
+            remaining_modals.remove(idx)
+            if len(remaining_modals) > 0:
+                perf = self._evaluate_modal_combination(
+                    modal_features, labels, train_idx, val_idx, 
+                    remaining_modals, learned_weights[remaining_modals]
+                )
+                results['progressive_ablation'][f'remove_{self.modal_names[idx]}'] = {
+                    'removed_modal': self.modal_names[idx],
+                    'removed_weight': learned_weights[idx],
+                    'remaining_modals': [self.modal_names[j] for j in remaining_modals],
+                    'performance': perf,
+                    'performance_drop': baseline_perf['r2'] - perf['r2']
+                }
+        
+        # 4. Top-K模态性能
+        logger.info("评估Top-K模态组合...")
+        sorted_indices_desc = np.argsort(learned_weights)[::-1]
+        
+        for k in [1, 2, 3, 4, 5]:
+            if k <= self.n_modals:
+                top_k_indices = sorted_indices_desc[:k].tolist()
+                perf = self._evaluate_modal_combination(
+                    modal_features, labels, train_idx, val_idx, 
+                    top_k_indices, learned_weights[top_k_indices]
+                )
+                results['top_k_modals'][f'top_{k}'] = {
+                    'modals': [self.modal_names[i] for i in top_k_indices],
+                    'performance': perf,
+                    'efficiency_ratio': perf['r2'] / baseline_perf['r2']
+                }
+        
+        # 5. 模态交互效应分析
+        logger.info("分析模态交互效应...")
+        results['interaction_effects'] = self._analyze_modal_interactions(
+            modal_features, labels, train_idx, val_idx, learned_weights
+        )
+        
+        # 6. 生成总结报告
+        results['summary'] = self._generate_ablation_summary(results)
+        
+        # 保存结果
+        self.ablation_results = results
+        
+        return results
+    
+    def _evaluate_modal_combination(self, modal_features: List[np.ndarray],
+                                  labels: np.ndarray,
+                                  train_idx: np.ndarray,
+                                  val_idx: np.ndarray,
+                                  modal_indices: List[int],
+                                  weights: np.ndarray = None) -> Dict:
+        """评估特定模态组合的性能"""
+        
+        # 选择指定模态
+        selected_features = [modal_features[i] for i in modal_indices]
+        
+        # 如果没有提供权重，使用均匀权重
+        if weights is None:
+            weights = np.ones(len(modal_indices)) / len(modal_indices)
+        else:
+            # 归一化权重
+            weights = weights / weights.sum()
+        
+        # 融合特征
+        fused_train = self._fuse_features(
+            [feat[train_idx] for feat in selected_features], weights
+        )
+        fused_val = self._fuse_features(
+            [feat[val_idx] for feat in selected_features], weights
+        )
+        
+        # 训练和评估
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(fused_train, labels[train_idx])
+        
+        predictions = model.predict(fused_val)
+        
+        return {
+            'rmse': np.sqrt(mean_squared_error(labels[val_idx], predictions)),
+            'mae': np.mean(np.abs(labels[val_idx] - predictions)),
+            'r2': r2_score(labels[val_idx], predictions),
+            'correlation': np.corrcoef(labels[val_idx], predictions)[0, 1]
+        }
+    
+    def _analyze_modal_interactions(self, modal_features: List[np.ndarray],
+                                  labels: np.ndarray,
+                                  train_idx: np.ndarray,
+                                  val_idx: np.ndarray,
+                                  weights: np.ndarray) -> Dict:
+        """分析模态间的交互效应"""
+        
+        interactions = {}
+        
+        # 获取权重最高的前4个模态进行交互分析（避免组合爆炸）
+        top_indices = np.argsort(weights)[-4:]
+        
+        # 计算二阶交互效应
+        for i in range(len(top_indices)):
+            for j in range(i+1, len(top_indices)):
+                idx_i, idx_j = top_indices[i], top_indices[j]
+                
+                # 单独性能
+                perf_i = self._evaluate_modal_combination(
+                    modal_features, labels, train_idx, val_idx, [idx_i]
+                )
+                perf_j = self._evaluate_modal_combination(
+                    modal_features, labels, train_idx, val_idx, [idx_j]
+                )
+                
+                # 组合性能
+                perf_ij = self._evaluate_modal_combination(
+                    modal_features, labels, train_idx, val_idx, [idx_i, idx_j]
+                )
+                
+                # 交互效应 = 组合性能 - 单独性能之和
+                interaction_effect = perf_ij['r2'] - (perf_i['r2'] + perf_j['r2'])
+                
+                interactions[f'{self.modal_names[idx_i]}-{self.modal_names[idx_j]}'] = {
+                    'effect': interaction_effect,
+                    'synergy': 'positive' if interaction_effect > 0 else 'negative'
+                }
+        
+        return interactions
+    
+    def _generate_ablation_summary(self, results: Dict) -> Dict:
+        """生成消融实验总结"""
+        
+        baseline_r2 = results['baseline']['performance']['r2']
+        
+        # 找出最重要的模态
+        modal_contributions = {
+            name: data['contribution'] 
+            for name, data in results['single_modal'].items()
+        }
+        most_important_modal = max(modal_contributions, key=modal_contributions.get)
+        
+        # 找出最优的模态组合（性价比）
+        best_efficiency = 0
+        best_combo = None
+        for k, data in results['top_k_modals'].items():
+            efficiency = data['efficiency_ratio'] / (int(k.split('_')[1]) / self.n_modals)
+            if efficiency > best_efficiency:
+                best_efficiency = efficiency
+                best_combo = k
+        
+        # 计算可安全移除的模态
+        safe_to_remove = []
+        for step, data in results['progressive_ablation'].items():
+            if data['performance_drop'] < 0.01:  # 性能下降小于1%
+                safe_to_remove.append(data['removed_modal'])
+        
+        return {
+            'baseline_performance': baseline_r2,
+            'most_important_modal': most_important_modal,
+            'modal_importance_ranking': sorted(
+                modal_contributions.items(), 
+                key=lambda x: x[1], 
+                reverse=True
+            ),
+            'best_efficiency_combo': best_combo,
+            'safe_to_remove': safe_to_remove,
+            'strong_synergies': [
+                pair for pair, data in results['interaction_effects'].items()
+                if data['effect'] > 0.05
+            ]
+        }
+    
+    def conditional_ablation(self, modal_features: List[np.ndarray],
+                           labels: np.ndarray,
+                           weights: np.ndarray,
+                           ablation_type: str = 'mask') -> Dict:
+        """
+        条件消融：不完全移除模态，而是用不同方式处理
+        
+        Args:
+            ablation_type: 'mask' (随机遮盖), 'noise' (噪声替换), 'mean' (均值替换)
+        """
+        results = {}
+        indices = np.arange(len(labels))
+        train_idx, val_idx = train_test_split(indices, test_size=0.2, random_state=42)
+        
+        # 基准性能
+        baseline_perf = self._evaluate_modal_combination(
+            modal_features, labels, train_idx, val_idx, 
+            list(range(self.n_modals)), weights
+        )
+        
+        for i in range(self.n_modals):
+            # 创建修改后的特征副本
+            modified_features = [f.copy() for f in modal_features]
+            
+            if ablation_type == 'mask':
+                # 随机遮盖50%的特征
+                mask = np.random.rand(*modified_features[i].shape) > 0.5
+                modified_features[i] = modified_features[i] * mask
+                
+            elif ablation_type == 'noise':
+                # 添加高斯噪声
+                noise = np.random.normal(0, 0.1, modified_features[i].shape)
+                modified_features[i] = modified_features[i] + noise
+                
+            elif ablation_type == 'mean':
+                # 替换为均值
+                mean_val = np.mean(modified_features[i])
+                modified_features[i] = np.full_like(modified_features[i], mean_val)
+            
+            # 评估修改后的性能
+            perf = self._evaluate_modal_combination(
+                modified_features, labels, train_idx, val_idx,
+                list(range(self.n_modals)), weights
+            )
+            
+            results[self.modal_names[i]] = {
+                'ablation_type': ablation_type,
+                'performance_drop': baseline_perf['r2'] - perf['r2'],
+                'relative_impact': (baseline_perf['r2'] - perf['r2']) / baseline_perf['r2']
+            }
+        
+        return results    
     def learn_weights(self, modal_features: List[np.ndarray], labels: np.ndarray, 
                      method: str = 'ablation', n_iterations: int = 5) -> np.ndarray:
         """
@@ -317,17 +600,29 @@ class AdaptiveFusionWeights:
                          weights: np.ndarray) -> float:
         """评估给定权重的性能"""
         # 融合特征
-        fused_train = self._fuse_features(train_features, weights)
-        fused_val = self._fuse_features(val_features, weights)
+        try:
+            import xgboost as xgb
+            # 融合特征
+            fused_train = self._fuse_features(train_features, weights)
+            fused_val = self._fuse_features(val_features, weights)
+            
+            # 使用GPU加速的XGBoost
+            model = xgb.XGBRegressor(
+                n_estimators=100,
+                tree_method='gpu_hist',  # GPU加速
+                gpu_id=0,
+                random_state=42
+            )
+            model.fit(fused_train, train_labels)
+            predictions = model.predict(fused_val)
+            return r2_score(val_labels, predictions)
+            
+        except ImportError:
+            # 如果没有XGBoost，使用原来的方法
+            logger.warning("XGBoost未安装，使用CPU版本")
+            return self._evaluate_weights_cpu(train_features, val_features, 
+                                            train_labels, val_labels, weights)
         
-        # 训练模型
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(fused_train, train_labels)
-        
-        # 评估
-        predictions = model.predict(fused_val)
-        return r2_score(val_labels, predictions)
-    
     def _evaluate_weights_cv(self, modal_features: List[np.ndarray], 
                            labels: np.ndarray, weights: np.ndarray) -> float:
         """使用交叉验证评估权重"""
@@ -496,6 +791,19 @@ class FusionAgent:
     def __init__(self):
         logger.info("初始化六模态融合智能体...")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        logger.info(f"使用设备: {self.device}")
+        
+        # 如果有多个GPU，使用第一个
+        if torch.cuda.device_count() > 1:
+            logger.info(f"检测到 {torch.cuda.device_count()} 个GPU")
+            
+        self.fusion_model = None
+        self.fusion_method = 'Hexa_SGD'
+        self._init_six_modal_encoders()
+        
+        # 将所有模型移到GPU
+        if self.device.type == 'cuda':
+            self._move_models_to_device()
         self.fusion_model = None
         self.fusion_method = 'Hexa_SGD'
         self._init_six_modal_encoders()
