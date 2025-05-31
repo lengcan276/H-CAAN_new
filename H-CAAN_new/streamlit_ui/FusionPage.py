@@ -414,7 +414,9 @@ def show_adaptive_weight_learning():
                     st.session_state.use_learned_weights = True
                     
                     st.success("✅ 权重学习完成！")
-                    
+                    with st.expander("查看权重详情"):
+                        st.write("学习到的权重:", st.session_state.learned_weights)
+                        st.write("权重标准差:", np.std(st.session_state.learned_weights))
                     # 显示权重演化
                     if result.get('weight_evolution'):
                         show_weight_evolution(result['weight_evolution'])
@@ -517,6 +519,8 @@ def show_weight_evolution(evolution: dict):
             st.metric("最佳性能 (R²)", f"{evolution.get('best_performance', 0):.4f}")
         with col2:
             st.metric("性能提升", f"+{(evolution.get('best_performance', 0) - evolution['performance_over_time'][0]):.4f}")
+# 在FusionPage.py中的show_weight_comparison函数中
+# 在FusionPage.py中的show_weight_comparison函数末尾
 def show_weight_comparison(optimal_weights):
     """显示权重对比"""
     if not optimal_weights:
@@ -545,19 +549,30 @@ def show_weight_comparison(optimal_weights):
     
     st.dataframe(comparison_df, use_container_width=True, hide_index=True)
     
-    # 关键发现
-    max_idx = np.argmax(optimal_weights)
-    min_idx = np.argmin(optimal_weights)
+    # 计算实际的最大最小权重位置
+    # 将optimal_weights转换为数值数组以确保argmax/argmin正常工作
+    weights_array = np.array([float(w) if isinstance(w, str) else w for w in optimal_weights])
+    max_idx = np.argmax(weights_array)
+    min_idx = np.argmin(weights_array)
     
+    # 计算标准差
+    weights_std = np.std(weights_array)
+    
+    # 修复关键发现显示
     st.success(f"""
     **🔍 关键发现**:
-    - 最重要模态: **{modalities[max_idx]}** (权重: {optimal_weights[max_idx]:.3f})
-    - 最低权重模态: **{modalities[min_idx]}** (权重: {optimal_weights[min_idx]:.3f})
-    - 权重标准差: {np.std(optimal_weights):.3f} ({'较均衡' if np.std(optimal_weights) < 0.05 else '有明显差异'})
+    - 最重要模态: **{modalities[max_idx]}** (权重: {weights_array[max_idx]:.3f})
+    - 最低权重模态: **{modalities[min_idx]}** (权重: {weights_array[min_idx]:.3f})
+    - 权重标准差: {weights_std:.3f} ({'较均衡' if weights_std < 0.05 else '有明显差异'})
     """)
+
 def show_learned_weights_bar(evolution: dict):
     """显示学习到的权重条形图"""
     weights = evolution['best_weights']
+    st.write("原始权重值:", weights)
+    
+    # 确保权重是数值类型
+    weights_array = np.array([float(w) if isinstance(w, str) else w for w in weights])
     modalities = evolution['modal_names']
     colors = ['#FFD700', '#FF69B4', '#FF6B6B', '#45B7D1', '#9370DB', '#4ECDC4']
     
@@ -791,7 +806,8 @@ def show_performance_evaluation():
                         'fusion_method': st.session_state.get('fusion_method', 'Hexa_SGD'),
                         'feature_dim': st.session_state.get('feature_dim', 768),
                         'n_modalities': 6,
-                        'use_learned_weights': st.session_state.get('use_learned_weights', False)  # 添加这一行
+                        'use_learned_weights': st.session_state.get('use_learned_weights', False),
+                        'weights': st.session_state.get('learned_weights')  # 添加这一行
                     }
                 })
                 

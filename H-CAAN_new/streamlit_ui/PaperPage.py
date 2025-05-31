@@ -35,7 +35,7 @@ def show_paper_page():
             authors = st.text_area(
                 "作者列表",
                 value="张三¹, 李四¹, 王五²\n¹计算机学院 ²药学院",
-                height=60
+                height=100  # 增加到大于68的值
             )
             
             keywords = st.text_input(

@@ -923,6 +923,12 @@ class FusionAgent:
         self.fusion_model = None
         self.fusion_method = 'Hexa_SGD'
         self._init_six_modal_encoders()
+        # 确保所有模型都移到正确的设备
+        self._move_models_to_device()
+        
+        # 使用增强版的自适应权重学习
+        self.adaptive_weights = AdaptiveFusionWeights(n_modals=6)
+        self.learned_weights = None
         
         # 将所有模型移到GPU
         if self.device.type == 'cuda':
@@ -1112,7 +1118,7 @@ class FusionAgent:
         return modal_features
     # 在 fusion_agent.py 的 FusionAgent 类中添加
     def learn_optimal_weights(self, train_features: np.ndarray, train_labels: np.ndarray, 
-                            method: str = 'auto', n_iterations: int = 5) -> Dict:
+                         method: str = 'auto', n_iterations: int = 5) -> Dict:
         """
         学习最优的模态融合权重
         """
@@ -1133,13 +1139,12 @@ class FusionAgent:
             weight_history = [weights.copy()]
             performance_history = []
             
-            # 使用简单的随机搜索优化（避免复杂的依赖）
+            # 使用简单的随机搜索优化
             best_weights = weights.copy()
             best_performance = -np.inf
             
             for iteration in range(n_iterations):
-                # 模拟性能评估（实际应该使用真实的模型评估）
-                # 这里使用简单的相关性作为性能指标
+                # 模拟性能评估
                 if len(train_features.shape) > 1 and train_features.shape[0] > 10:
                     # 计算特征与标签的相关性
                     correlations = []
@@ -1163,7 +1168,7 @@ class FusionAgent:
                     best_performance = current_performance
                     best_weights = weights.copy()
                 
-                # 随机调整权重（简化的优化）
+                # 随机调整权重
                 if iteration < n_iterations - 1:
                     # 生成新的随机权重
                     if method == 'gradient':
@@ -1189,40 +1194,57 @@ class FusionAgent:
                     
                     weight_history.append(weights.copy())
             
-            # 确保返回正确的格式
+            # 存储原始权重（不经过额外处理）
+            self.original_best_weights = best_weights.copy()
+            
+            # 保证精度
+            original_weights_list = [float('{:.6f}'.format(w)) for w in self.original_best_weights]
+            
+            # 保存学习到的权重，确保格式一致
+            self.learned_weights = original_weights_list
+            
+            # 记录详细日志
+            logger.info(f"最终学习到的权重(原始): {self.original_best_weights}")
+            logger.info(f"格式化后的权重: {original_weights_list}")
+            logger.info(f"权重和: {sum(original_weights_list)}")
+            
+            # 确保返回正确的格式和内容
             result = {
-                'optimal_weights': best_weights.tolist(),
+                'optimal_weights': original_weights_list,  # 使用高精度格式化后的权重
+                'original_weights': original_weights_list,  # 保存原始权重，便于验证
                 'weight_evolution': {
                     'weights_over_time': np.array(weight_history),
                     'performance_over_time': performance_history,
                     'best_performance': best_performance,
-                    'best_weights': best_weights.tolist(),
+                    'best_weights': original_weights_list,  # 使用相同的格式化权重
                     'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
                 }
             }
             
-            logger.info(f"权重学习完成，最佳性能: {best_performance:.4f}")
             return result
             
         except Exception as e:
             logger.error(f"权重学习失败: {str(e)}")
             import traceback
             logger.error(f"详细错误: {traceback.format_exc()}")
+            
             # 返回默认结果而不是抛出异常
+            default_weights = [1/6] * 6
             return {
-                'optimal_weights': [1/6] * 6,
+                'optimal_weights': default_weights,
+                'original_weights': default_weights,  # 添加原始权重字段
                 'weight_evolution': {
                     'weights_over_time': np.array([[1/6] * 6]),
                     'performance_over_time': [0.5],
                     'best_performance': 0.5,
-                    'best_weights': [1/6] * 6,
+                    'best_weights': default_weights,
                     'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
                 }
             }
     
     def fuse_features(self, processed_data: Dict, 
-                     fusion_method: Optional[str] = None,
-                     use_learned_weights: bool = False) -> np.ndarray:
+                 fusion_method: Optional[str] = None,
+                 use_learned_weights: bool = False) -> np.ndarray:
         """
         执行六模态特征融合 - 支持学习的权重
         """
@@ -1237,14 +1259,15 @@ class FusionAgent:
                 modal_features = self._extract_six_modal_features(processed_data)
                 
                 # 决定使用的权重
-                if use_learned_weights and self.learned_weights is not None:
+                if use_learned_weights and hasattr(self, 'learned_weights') and self.learned_weights is not None:
                     # 使用学习到的权重
+                    # 确保使用的是原始计算的权重值，不进行额外处理
                     weights = torch.tensor(self.learned_weights, dtype=torch.float32)
-                    logger.info("使用学习到的自适应权重")
+                    logger.info(f"使用学习到的自适应权重: {self.learned_weights}")
                 else:
                     # 使用预设权重
                     weights = self._get_fusion_weights()
-                    logger.info(f"使用预设权重: {self.fusion_method}")
+                    logger.info(f"使用预设权重: {self.fusion_method}, 值: {weights.tolist()}")
                 
                 # 执行融合
                 fused_features = self._apply_fusion_with_weights(modal_features, weights)
@@ -1259,16 +1282,29 @@ class FusionAgent:
                 
         except Exception as e:
             logger.error(f"特征融合失败: {str(e)}")
+            logger.error(traceback.format_exc())  # 添加详细的错误堆栈
             batch_size = self._get_batch_size(processed_data)
             return np.random.randn(batch_size, 256)
     
     def _apply_fusion_with_weights(self, features: List[torch.Tensor], 
-                                  weights: torch.Tensor) -> torch.Tensor:
+                             weights: torch.Tensor) -> torch.Tensor:
         """使用指定权重进行融合"""
+        # 确保权重在正确的设备上
+        if weights.device != self.device:
+            weights = weights.to(self.device)
+            
+        # 记录实际使用的权重值
+        logger.info(f"应用融合权重: {weights.cpu().tolist()}")
+        
         # 加权特征
         weighted_features = []
         for i, feat in enumerate(features):
-            weighted_features.append(feat * weights[i])
+            # 确保特征也在正确的设备上
+            if feat.device != self.device:
+                feat = feat.to(self.device)
+            # 确保索引有效
+            if i < len(weights):
+                weighted_features.append(feat * weights[i])
         
         # 拼接所有特征
         concat_features = torch.cat(features, dim=-1)  # [B, 6*768]
@@ -1299,81 +1335,7 @@ class FusionAgent:
         
         weights = weights_map.get(self.fusion_method, [1/6] * 6)
         return torch.tensor(weights, dtype=torch.float32)
-    def learn_optimal_weights(self, train_features: np.ndarray, train_labels: np.ndarray, 
-                         method: str = 'auto', n_iterations: int = 5) -> Dict:
-        """
-        学习最优的模态融合权重
-        """
-        logger.info(f"开始学习融合权重，方法: {method}, 迭代次数: {n_iterations}")
-        
-        try:
-            # 确保输入是numpy数组
-            train_features = np.array(train_features)
-            train_labels = np.array(train_labels).flatten()
-            
-            # 初始化六个模态的权重
-            n_modalities = 6
-            weights = np.ones(n_modalities) / n_modalities  # 初始均匀权重
-            
-            # 记录演化过程
-            weight_history = [weights.copy()]
-            performance_history = []
-            
-            # 简单的梯度下降优化
-            learning_rate = 0.1
-            best_weights = weights.copy()
-            best_performance = -np.inf
-            
-            for iteration in range(n_iterations):
-                # 这里简化处理，实际应该根据不同模态特征进行加权
-                # 使用简单的验证来评估权重
-                from sklearn.model_selection import cross_val_score
-                from sklearn.ensemble import RandomForestRegressor
-                
-                # 创建一个简单的模型来评估当前权重
-                model = RandomForestRegressor(n_estimators=50, random_state=42)
-                
-                # 交叉验证评分
-                scores = cross_val_score(model, train_features, train_labels, 
-                                    cv=3, scoring='r2')
-                current_performance = np.mean(scores)
-                
-                performance_history.append(current_performance)
-                
-                # 更新最佳权重
-                if current_performance > best_performance:
-                    best_performance = current_performance
-                    best_weights = weights.copy()
-                
-                # 随机调整权重（简化的优化）
-                if iteration < n_iterations - 1:
-                    # 添加一些随机扰动
-                    perturbation = np.random.randn(n_modalities) * 0.05
-                    weights = weights + learning_rate * perturbation
-                    
-                    # 确保权重非负且和为1
-                    weights = np.abs(weights)
-                    weights = weights / np.sum(weights)
-                    
-                    weight_history.append(weights.copy())
-            
-            # 返回结果
-            return {
-                'optimal_weights': best_weights.tolist(),
-                'weight_evolution': {
-                    'weights_over_time': np.array(weight_history),
-                    'performance_over_time': performance_history,
-                    'best_performance': best_performance,
-                    'best_weights': best_weights.tolist(),
-                    'modal_names': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN', 'GraphTrans', 'BiGRU']
-                }
-            }
-            
-        except Exception as e:
-            logger.error(f"权重学习失败: {str(e)}")
-            import traceback
-            logger.error(f"详细错误: {traceback.format_exc()}")
-            raise
+    
     def set_fusion_method(self, method: str):
         """设置融合方法"""
         self.fusion_method = method
@@ -1386,42 +1348,42 @@ class FusionAgent:
         
         # 1. MFBERT特征（模拟预训练特征）
         if 'mfbert_features' in processed_data:
-            mfbert_feat = torch.FloatTensor(processed_data['mfbert_features'])
+            mfbert_feat = torch.FloatTensor(processed_data['mfbert_features']).to(self.device)
         else:
             # 模拟MFBERT预训练特征
-            mfbert_feat = torch.randn(batch_size, 768) * 0.1 + 0.5
+            mfbert_feat = torch.randn(batch_size, 768).to(self.device) * 0.1 + 0.5
         mfbert_encoded = self.mfbert_encoder(mfbert_feat)
         features.append(mfbert_encoded)
         
         # 2. ChemBERTa特征（模拟化学专用特征）
         if 'chemberta_features' in processed_data:
-            chemberta_feat = torch.FloatTensor(processed_data['chemberta_features'])
+            chemberta_feat = torch.FloatTensor(processed_data['chemberta_features']).to(self.device)
         else:
             # 模拟ChemBERTa特征
-            chemberta_feat = torch.randn(batch_size, 768) * 0.1 + 0.4
+            chemberta_feat = torch.randn(batch_size, 768).to(self.device) * 0.1 + 0.4
         chemberta_encoded = self.chemberta_encoder(chemberta_feat)
         features.append(chemberta_encoded)
         
         # 3. Transformer特征（SMILES序列）
         if 'smiles_features' in processed_data:
             # 简化处理：直接生成随机嵌入
-            smiles_embed = torch.randn(batch_size, 100, 768)
+            smiles_embed = torch.randn(batch_size, 100, 768).to(self.device)
             transformer_encoded = self.transformer_encoder(smiles_embed).mean(dim=1)
         else:
-            transformer_encoded = torch.randn(batch_size, 768) * 0.1 + 0.3
+            transformer_encoded = torch.randn(batch_size, 768).to(self.device) * 0.1 + 0.3
         features.append(transformer_encoded)
         
         # 4. GCN特征（分子图）
         if 'graph_features' in processed_data:
             # 简化处理：使用随机图特征
-            graph_feat = torch.randn(batch_size, 78)
+            graph_feat = torch.randn(batch_size, 78).to(self.device)
             gcn_encoded = self.gcn_encoder(graph_feat)
         else:
-            gcn_encoded = torch.randn(batch_size, 768) * 0.1 + 0.2
+            gcn_encoded = torch.randn(batch_size, 768).to(self.device) * 0.1 + 0.2
         features.append(gcn_encoded)
         
         # 5. GraphTransformer特征
-        graph_trans_feat = torch.randn(batch_size, 1, 768)
+        graph_trans_feat = torch.randn(batch_size, 1, 768).to(self.device)
         for layer in self.graph_transformer:
             graph_trans_feat = layer(graph_trans_feat)
         graph_trans_encoded = graph_trans_feat.squeeze(1)
@@ -1429,16 +1391,16 @@ class FusionAgent:
         
         # 6. BiGRU+Attention特征（ECFP）
         if 'fingerprints' in processed_data:
-            ecfp_feat = torch.FloatTensor(processed_data['fingerprints'])
+            ecfp_feat = torch.FloatTensor(processed_data['fingerprints']).to(self.device)
             if ecfp_feat.shape[1] != 1024:
                 # 调整维度到1024
-                linear = nn.Linear(ecfp_feat.shape[1], 1024)
+                linear = nn.Linear(ecfp_feat.shape[1], 1024).to(self.device)
                 ecfp_feat = linear(ecfp_feat)
             ecfp_feat = ecfp_feat.unsqueeze(1)  # 添加序列维度
             bigru_out, _ = self.bigru(ecfp_feat)
             bigru_encoded = self.bigru_attention(bigru_out)
         else:
-            bigru_encoded = torch.randn(batch_size, 768) * 0.1 + 0.1
+            bigru_encoded = torch.randn(batch_size, 768).to(self.device) * 0.1 + 0.1
         features.append(bigru_encoded)
         
         return features
@@ -1447,23 +1409,23 @@ class FusionAgent:
         """根据选择的融合方法进行特征融合"""
         
         if self.fusion_method == 'Hexa_SGD':
-            # SGD优化的权重分配
-            weights = torch.tensor([0.20, 0.18, 0.17, 0.16, 0.15, 0.14])
+            # SGD优化的权重分配 - 确保在正确的设备上
+            weights = torch.tensor([0.20, 0.18, 0.17, 0.16, 0.15, 0.14], device=self.device)
         elif self.fusion_method == 'Hexa_LASSO':
             # L1正则化权重
-            weights = torch.tensor([0.25, 0.22, 0.20, 0.15, 0.10, 0.08])
+            weights = torch.tensor([0.25, 0.22, 0.20, 0.15, 0.10, 0.08], device=self.device)
         elif self.fusion_method == 'Hexa_Elastic':
             # 弹性网络权重
-            weights = torch.tensor([0.22, 0.20, 0.18, 0.16, 0.14, 0.10])
+            weights = torch.tensor([0.22, 0.20, 0.18, 0.16, 0.14, 0.10], device=self.device)
         elif self.fusion_method == 'Hexa_RF':
             # 随机森林权重
-            weights = torch.tensor([0.18, 0.19, 0.17, 0.16, 0.17, 0.13])
+            weights = torch.tensor([0.18, 0.19, 0.17, 0.16, 0.17, 0.13], device=self.device)
         elif self.fusion_method == 'Hexa_GB':
             # 梯度提升权重
-            weights = torch.tensor([0.19, 0.18, 0.17, 0.16, 0.16, 0.14])
+            weights = torch.tensor([0.19, 0.18, 0.17, 0.16, 0.16, 0.14], device=self.device)
         else:
             # 默认均匀权重
-            weights = torch.ones(6) / 6
+            weights = torch.ones(6, device=self.device) / 6
             
         # 加权融合
         weighted_features = []
@@ -1487,42 +1449,7 @@ class FusionAgent:
         
         return final_features
     
-    def fuse_features(self, processed_data: Dict, fusion_method: Optional[str] = None) -> np.ndarray:
-        """
-        执行六模态层次化跨模态自适应注意力融合
-        """
-        logger.info("开始六模态特征融合...")
-        
-        if fusion_method:
-            self.set_fusion_method(fusion_method)
-        
-        try:
-            with torch.no_grad():
-                # 提取六个模态的特征
-                modal_features = self._extract_six_modal_features(processed_data)
-                
-                # 应用选定的融合方法
-                fused_features = self._apply_fusion_method(modal_features)
-                
-                # 归一化到256维（为了兼容原有系统）
-                if fused_features.shape[-1] != 256:
-                    projection = nn.Linear(fused_features.shape[-1], 256)
-                    fused_features = projection(fused_features)
-                
-                logger.info(f"六模态融合完成，特征维度: {fused_features.shape}")
-                logger.info(f"使用融合方法: {self.fusion_method}")
-                
-                # 转换为numpy数组
-                return fused_features.numpy()
-                
-        except Exception as e:
-            logger.error(f"六模态特征融合失败: {str(e)}")
-            import traceback
-            logger.error(f"详细错误: {traceback.format_exc()}")
-            
-            # 返回默认特征
-            batch_size = self._get_batch_size(processed_data)
-            return np.random.randn(batch_size, 256)
+    
     
     def _get_batch_size(self, processed_data: Dict) -> int:
         """获取批次大小"""

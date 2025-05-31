@@ -303,8 +303,8 @@ class UIAgent:
                     'status': 'error',
                     'message': f'标签数据格式不正确: {type(labels_data)}'
                 }
+                
             # 验证输入
-            
             if train_features is None:
                 logger.error("缺少train_features")
                 return {
@@ -349,7 +349,8 @@ class UIAgent:
                     n_iterations=n_iterations
                 )
                 
-                logger.info(f"dispatch_task返回结果: {result}")
+                logger.info(f"dispatch_task返回结果类型: {type(result)}")
+                logger.info(f"dispatch_task返回结果键: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
                 
             except Exception as e:
                 logger.error(f"dispatch_task调用失败: {str(e)}")
@@ -371,11 +372,37 @@ class UIAgent:
                     }
                 }
             
+            # 获取权重值
+            optimal_weights = result.get('optimal_weights', [1/6] * 6)
+            
+            # 确保权重是列表而不是numpy数组
+            if isinstance(optimal_weights, np.ndarray):
+                optimal_weights = optimal_weights.tolist()
+            
+            # 添加一个原始权重字段，确保不被处理
+            raw_weights = optimal_weights.copy() if isinstance(optimal_weights, list) else list(optimal_weights)
+            
+            # 记录权重值，用于调试
+            logger.info(f"原始计算的权重值: {raw_weights}")
+            logger.info(f"最终返回的权重值: {optimal_weights}")
+            
+            # 将权重存储到session_state以便在UI中使用
+            if 'st' in globals():
+                st.session_state['learned_weights'] = optimal_weights
+                st.session_state['raw_weights'] = raw_weights  # 存储原始权重
+                st.session_state['weight_source'] = 'learned'  # 标记权重来源
+            
             # 确保返回正确的格式
             return {
                 'status': 'success',
-                'optimal_weights': result.get('optimal_weights', [1/6] * 6),
-                'weight_evolution': result.get('weight_evolution', {})
+                'optimal_weights': optimal_weights,
+                'raw_weights': raw_weights,  # 添加原始权重字段
+                'weight_evolution': result.get('weight_evolution', {}),
+                'weight_details': {  # 添加详细的权重信息，便于调试
+                    'type': type(optimal_weights).__name__,
+                    'values': optimal_weights,
+                    'sum': sum(optimal_weights) if isinstance(optimal_weights, list) else 'unknown'
+                }
             }
             
         except Exception as e:
@@ -388,6 +415,7 @@ class UIAgent:
             return {
                 'status': 'success',
                 'optimal_weights': default_weights,
+                'raw_weights': default_weights,
                 'weight_evolution': {
                     'weights_over_time': np.array([default_weights]),
                     'performance_over_time': [0.5],
