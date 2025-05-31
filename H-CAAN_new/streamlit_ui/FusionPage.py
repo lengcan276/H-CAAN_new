@@ -957,91 +957,85 @@ def show_attention_visualization():
                  f"{attention_df.iloc[0]['模态对']}")
         st.metric("注意力标准差", 
                  f"{np.std(attention_matrix[np.triu_indices(6, k=1)]):.3f}")
+# 修改 show_ablation_study 函数
+
 def show_ablation_study():
     """消融实验标签页"""
     st.subheader("🔬 系统化消融实验")
-    if 'ablation_results' not in st.session_state:
-        # 创建模拟的消融实验结果
-        st.session_state.ablation_results = {
-            'baseline': {
-                'performance': {
-                    'r2': 0.95,
-                    'rmse': 0.45,
-                    'mae': 0.35,
-                    'correlation': 0.97
-                }
-            },
-            'single_modal': {
-                'MFBERT': {'contribution': 0.25, 'performance': {'r2': 0.85}},
-                'ChemBERTa': {'contribution': 0.20, 'performance': {'r2': 0.82}},
-                'Transformer': {'contribution': 0.15, 'performance': {'r2': 0.78}},
-                'GCN': {'contribution': 0.15, 'performance': {'r2': 0.75}},
-                'GraphTrans': {'contribution': 0.15, 'performance': {'r2': 0.76}},
-                'BiGRU': {'contribution': 0.10, 'performance': {'r2': 0.70}}
-            },
-            'progressive_ablation': {
-                'step_0': {
-                    'removed_modal': 'BiGRU',
-                    'performance': {'r2': 0.94},
-                    'performance_drop': 0.01
-                },
-                'step_1': {
-                    'removed_modal': 'GraphTrans',
-                    'performance': {'r2': 0.92},
-                    'performance_drop': 0.02
-                }
-            },
-            'top_k_modals': {
-                'top_2': {
-                    'modals': ['MFBERT', 'ChemBERTa'],
-                    'performance': {'r2': 0.88},
-                    'efficiency_ratio': 0.93
-                },
-                'top_3': {
-                    'modals': ['MFBERT', 'ChemBERTa', 'Transformer'],
-                    'performance': {'r2': 0.92},
-                    'efficiency_ratio': 0.97
-                },
-                'top_4': {
-                    'modals': ['MFBERT', 'ChemBERTa', 'Transformer', 'GCN'],
-                    'performance': {'r2': 0.94},
-                    'efficiency_ratio': 0.99
-                }
-            },
-            'interaction_effects': {
-                'MFBERT-ChemBERTa': {'effect': 0.08},
-                'MFBERT-Transformer': {'effect': 0.06},
-                'ChemBERTa-GCN': {'effect': 0.05}
-            },
-            'summary': {
-                'most_important_modal': 'MFBERT',
-                'best_efficiency_combo': 'top_3',
-                'safe_to_remove': ['BiGRU'],
-                'modal_importance_ranking': [
-                    ('MFBERT', 0.25),
-                    ('ChemBERTa', 0.20),
-                    ('Transformer', 0.15),
-                    ('GCN', 0.15),
-                    ('GraphTrans', 0.15),
-                    ('BiGRU', 0.10)
-                ],
-                'strong_synergies': ['MFBERT-ChemBERTa', 'MFBERT-Transformer']
-            }
-        }
+    
+    # 检查前置条件
+    if 'model_trained' not in st.session_state or not st.session_state.get('model_trained', False):
+        st.error("❌ 请先完成模型训练后再进行消融实验")
+        st.info("""
+        **执行消融实验的前置条件**：
+        1. ✅ 完成数据预处理
+        2. ✅ 完成特征融合
+        3. ✅ 完成模型训练
+        4. ✅ 学习自适应权重
+        
+        请按顺序完成以上步骤后再返回此页面。
+        """)
+        return
+    
     # 检查是否有学习到的权重
     if 'learned_weights' not in st.session_state:
-        st.warning("⚠️ 请先进行自适应权重学习")
+        st.warning("⚠️ 请先进行自适应权重学习，这将提供更准确的消融实验结果")
+        if st.button("立即进行权重学习"):
+            st.switch_page("pages/3_特征融合.py")  # 跳转到融合页面
         return
+    
+    # 显示当前模型信息
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("模型状态", "已训练" if st.session_state.get('model_trained') else "未训练")
+    with col2:
+        if 'training_metrics' in st.session_state:
+            st.metric("基准R²", f"{st.session_state['training_metrics'].get('r2', 0):.4f}")
+    with col3:
+        st.metric("权重状态", "已学习" if 'learned_weights' in st.session_state else "未学习")
     
     st.info("""
     **消融实验说明**：
-    - 基于自适应学习的权重进行系统化消融
+    - 基于已训练的模型和学习到的权重进行系统化消融
     - 评估各模态的真实贡献和必要性
     - 识别模态间的协同效应
     - 找出最优的效率-性能平衡点
     """)
     
-    # 消融实验设置
+    # 准备六模态特征数据
+    def prepare_six_modal_features():
+        """准备真实的六模态特征"""
+        if 'split_data' not in st.session_state:
+            return None
+        
+        train_data = st.session_state['split_data']['train']
+        
+        # 从融合智能体获取各模态特征
+        # 这里需要调用fusion_agent来提取各个模态的特征
+        # 而不是简单的模拟
+        try:
+            # 调用fusion_agent获取各模态原始特征
+            result = st.session_state.ui_agent.handle_user_input({
+                'action': 'extract_modal_features',
+                'params': {
+                    'processed_data': st.session_state.get('processed_data', {})
+                }
+            })
+            
+            if result['status'] == 'success':
+                return result['modal_features']
+            else:
+                # 如果提取失败，使用备用方案
+                return prepare_modal_features_for_ablation(
+                    np.array(train_data['fingerprints'])
+                )
+        except:
+            # 备用方案
+            return prepare_modal_features_for_ablation(
+                np.array(train_data['fingerprints'])
+            )
+    
+    # 消融实验配置
     with st.expander("⚙️ 消融实验配置", expanded=True):
         col1, col2, col3 = st.columns(3)
         
@@ -1049,66 +1043,110 @@ def show_ablation_study():
             ablation_mode = st.selectbox(
                 "消融模式",
                 ["综合消融", "条件消融", "增量消融"],
-                help="综合消融：完全移除模态；条件消融：部分干扰；增量消融：逐步添加"
+                help="""
+                - 综合消融：完全移除模态，评估真实性能影响
+                - 条件消融：部分干扰模态，观察鲁棒性
+                - 增量消融：逐步添加模态，找出最优组合
+                """
             )
         
         with col2:
             if ablation_mode == "条件消融":
                 ablation_type = st.selectbox(
                     "干扰类型",
-                    ["mask（随机遮盖）", "noise（噪声替换）", "mean（均值替换）"]
+                    ["mask（随机遮盖）", "noise（噪声替换）", "mean（均值替换）"],
+                    help="选择如何干扰模态特征"
                 )
             else:
                 ablation_type = None
         
         with col3:
             show_details = st.checkbox("显示详细结果", value=True)
+            export_report = st.checkbox("导出报告", value=False)
     
     # 执行消融实验
     if st.button("🚀 开始消融实验", type="primary", use_container_width=True):
-        with st.spinner("正在执行消融实验..."):
-            # 获取必要数据
-            if 'split_data' not in st.session_state:
-                st.error("缺少训练数据")
-                return
-            
-            # 准备数据
-            train_data = st.session_state['split_data']['train']
-            train_features = np.array(train_data['fingerprints'])
-            train_labels = np.array(list(train_data['labels'].values())[0])
-            
-            # 为了消融实验，需要准备六个模态的模拟特征
-            # 在实际应用中，这些应该是真实的不同模态特征
-            modal_features = prepare_modal_features_for_ablation(train_features)
-            
-            # 获取学习到的权重
-            learned_weights = np.array(st.session_state['learned_weights'])
-            
+        with st.spinner("正在执行消融实验，这可能需要几分钟..."):
             try:
-                # 调用fusion_agent进行消融实验
+                # 准备数据
+                modal_features = prepare_six_modal_features()
+                if modal_features is None:
+                    st.error("无法准备模态特征数据")
+                    return
+                
+                # 获取标签数据
+                train_data = st.session_state['split_data']['train']
+                train_labels = list(train_data['labels'].values())[0]
+                
+                # 获取学习到的权重
+                learned_weights = st.session_state['learned_weights']
+                
+                # 显示进度
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # 更新进度
+                status_text.text("正在初始化消融实验...")
+                progress_bar.progress(0.1)
+                
+                # 调用消融实验
                 result = st.session_state.ui_agent.handle_user_input({
                     'action': 'ablation_study',
                     'params': {
                         'modal_features': [f.tolist() for f in modal_features],
-                        'labels': train_labels.tolist(),
-                        'learned_weights': learned_weights.tolist(),
+                        'labels': train_labels,
+                        'learned_weights': learned_weights,
                         'ablation_mode': ablation_mode,
                         'ablation_type': ablation_type
                     }
                 })
                 
+                # 更新进度
+                status_text.text("正在分析结果...")
+                progress_bar.progress(0.9)
+                
                 if result['status'] == 'success':
                     st.session_state.ablation_results = result['results']
-                    st.success("✅ 消融实验完成！")
+                    progress_bar.progress(1.0)
+                    status_text.text("消融实验完成！")
+                    st.success("✅ 消融实验成功完成！")
+                    st.balloons()
                 else:
                     st.error(f"消融实验失败: {result.get('message')}")
                     
             except Exception as e:
                 st.error(f"执行消融实验时出错: {str(e)}")
+                with st.expander("查看详细错误"):
+                    st.code(str(e))
     
     # 显示消融实验结果
-    if 'ablation_results' in st.session_state:
+    if 'ablation_results' in st.session_state and st.session_state.ablation_results:
         show_ablation_results(st.session_state.ablation_results)
+        
+        # 导出选项
+        if export_report:
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # 导出JSON格式
+                json_str = json.dumps(st.session_state.ablation_results, indent=2)
+                st.download_button(
+                    label="📥 下载JSON数据",
+                    data=json_str,
+                    file_name=f"ablation_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json"
+                )
+            
+            with col2:
+                # 导出Markdown报告
+                report = generate_ablation_report(st.session_state.ablation_results)
+                st.download_button(
+                    label="📄 下载分析报告",
+                    data=report,
+                    file_name=f"ablation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                    mime="text/markdown"
+                )
 
 def show_ablation_results(results: Dict):
     """显示消融实验结果"""

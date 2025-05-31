@@ -47,7 +47,8 @@ class UIAgent:
                 'run_workflow': self._handle_workflow,
                 'fuse_features': self._handle_feature_fusion,
                 'learn_fusion_weights': self._handle_weight_learning,  # 确保这里有
-                'ablation_study': self._handle_ablation_study
+                'ablation_study': self._handle_ablation_study,
+                'extract_modal_features': self._handle_extract_modal_features
             }
             
             # 检查action是否存在
@@ -65,7 +66,35 @@ class UIAgent:
             import traceback
             logger.error(f"详细错误堆栈: {traceback.format_exc()}")
             return {'status': 'error', 'message': str(e)}
-        
+    def _handle_extract_modal_features(self, params: Dict) -> Dict:
+        """处理模态特征提取请求"""
+        try:
+            processed_data = params.get('processed_data')
+            if not processed_data:
+                # 尝试从session获取
+                processed_data = st.session_state.get('processed_data', {})
+            
+            if not processed_data:
+                return {
+                    'status': 'error',
+                    'message': '未找到处理后的数据'
+                }
+            
+            # 调用fusion_agent提取各模态特征
+            fusion_agent = self.manager.agents['fusion']
+            modal_features = fusion_agent.extract_modal_features_separately(processed_data)
+            
+            return {
+                'status': 'success',
+                'modal_features': modal_features
+            }
+            
+        except Exception as e:
+            logger.error(f"特征提取失败: {str(e)}")
+            return {
+                'status': 'error',
+                'message': str(e)
+            }
     def show_adaptive_weight_learning():
         """自适应权重学习部分"""
         st.markdown("### 🎯 自适应权重学习")
@@ -87,44 +116,75 @@ class UIAgent:
     def _handle_ablation_study(self, params: Dict) -> Dict:
         """处理消融实验请求"""
         try:
-            modal_features = [np.array(f) for f in params.get('modal_features', [])]
-            labels = np.array(params.get('labels'))
-            learned_weights = np.array(params.get('learned_weights'))
+        # 检查是否有已训练的模型
+            if 'model_path' not in st.session_state:
+                return {
+                    'status': 'error',
+                    'message': '请先训练模型后再进行消融实验'
+                }
+            
+            # 获取必要的数据
+            modal_features = params.get('modal_features')
+            labels = params.get('labels')
+            learned_weights = params.get('learned_weights')
             ablation_mode = params.get('ablation_mode', '综合消融')
             ablation_type = params.get('ablation_type')
+            
+            # 从session获取已训练的模型
+            model_path = st.session_state.get('model_path')
+            
+            # 创建model_agent实例
+            from agents.model_agent import ModelAgent
+            model_agent = ModelAgent()
+            model_agent.model_path = model_path
             
             # 获取fusion_agent
             fusion_agent = self.manager.agents['fusion']
             
             if ablation_mode == "综合消融":
-                # 执行综合消融实验
+                # 执行综合消融实验 - 传入model_agent
                 results = fusion_agent.adaptive_weights.comprehensive_ablation_study(
-                    modal_features, labels, learned_weights
+                    [np.array(f) for f in modal_features], 
+                    np.array(labels), 
+                    np.array(learned_weights),
+                    model_agent=model_agent
                 )
             elif ablation_mode == "条件消融":
-                # 执行条件消融
+                # 条件消融
                 ablation_type_map = {
                     "mask（随机遮盖）": "mask",
-                    "noise（噪声替换）": "noise",
+                    "noise（噪声替换）": "noise", 
                     "mean（均值替换）": "mean"
                 }
                 results = fusion_agent.adaptive_weights.conditional_ablation(
-                    modal_features, labels, learned_weights,
-                    ablation_type_map.get(ablation_type, "mask")
+                    [np.array(f) for f in modal_features],
+                    np.array(labels),
+                    np.array(learned_weights),
+                    ablation_type_map.get(ablation_type, "mask"),
+                    model_agent=model_agent
                 )
             else:
-                # 增量消融（从单模态开始逐步添加）
+                # 增量消融
                 results = fusion_agent.adaptive_weights.incremental_ablation(
-                    modal_features, labels, learned_weights
+                    [np.array(f) for f in modal_features],
+                    np.array(labels),
+                    np.array(learned_weights),
+                    model_agent=model_agent
                 )
+            
+            # 保存消融实验结果
+            st.session_state['ablation_results'] = results
             
             return {
                 'status': 'success',
-                'results': results
+                'results': results,
+                'message': '消融实验完成'
             }
             
         except Exception as e:
             logger.error(f"消融实验失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
             return {
                 'status': 'error',
                 'message': str(e)
@@ -665,7 +725,7 @@ class UIAgent:
                 'data_path': data_path,
                 'target_property': target_property,
                 'train_params': train_params,
-                'labels': params.get('labels')  # 如果有标签数据
+                'labels': params.get('labels')
             }
             
             logger.info(f"开始训练工作流，目标属性: {target_property}")
@@ -709,7 +769,6 @@ class UIAgent:
                 import joblib
                 model_info = joblib.load(model_path)
                 if isinstance(model_info, dict):
-                    # 优先使用test_metrics，如果没有则使用其他可用的metrics
                     metrics = model_info.get('test_metrics', 
                             model_info.get('metrics', {}))
                     logger.info(f"从模型文件加载性能指标: {metrics}")
@@ -729,6 +788,57 @@ class UIAgent:
                 st.session_state['model_path'] = model_path
                 st.session_state['training_metrics'] = metrics
                 st.session_state['model_trained'] = True
+            
+            # ==================== 新增代码开始 ====================
+            # 在返回成功结果之前，保存模型信息到模型管理器
+            if model_path and os.path.exists(model_path):
+                try:
+                    # 导入模型管理器
+                    from utils.model_manager import ModelManager
+                    model_manager = ModelManager()
+                    
+                    # 准备任务名称（从train_params或使用默认值）
+                    task_name = train_params.get('task_name', 'default')
+                    
+                    # 如果没有task_name，尝试从文件名或当前时间生成
+                    if task_name == 'default':
+                        # 尝试从当前文件名生成
+                        if 'current_file' in st.session_state:
+                            task_name = os.path.splitext(st.session_state['current_file'])[0]
+                        else:
+                            # 使用时间戳
+                            from datetime import datetime
+                            task_name = f"model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    
+                    # 保存模型信息
+                    model_manager.save_model_info(
+                        task_name=task_name,
+                        model_path=model_path,
+                        metrics=metrics
+                    )
+                    logger.info(f"模型信息已保存到模型管理器: {task_name}")
+                    
+                except Exception as e:
+                    # 如果保存失败，只记录警告，不影响训练结果
+                    logger.warning(f"保存模型信息到管理器失败: {str(e)}")
+            # ==================== 新增代码结束 ====================
+            
+            def convert_numpy_in_dict(obj):
+                """递归转换字典中的numpy数组"""
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                elif isinstance(obj, np.generic):
+                    return obj.item()
+                elif isinstance(obj, dict):
+                    return {k: convert_numpy_in_dict(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_numpy_in_dict(item) for item in obj]
+                else:
+                    return obj
+            
+            # 转换metrics中可能的numpy数组
+            if metrics:
+                metrics = convert_numpy_in_dict(metrics)
             
             return {
                 'status': 'success',
@@ -787,14 +897,14 @@ class UIAgent:
         if features is None:
             return {'status': 'error', 'message': '未找到特征数据'}
         
-        # 转换为numpy数组
-        if not isinstance(features, np.ndarray):
+        # 确保是numpy数组格式
+        if isinstance(features, list):
             features = np.array(features)
         
         # 生成解释报告
         explanation = self.manager.dispatch_task('explain',
-                                            model_path=model_path,
-                                            fused_features=features)
+                                                model_path=model_path,
+                                                fused_features=features)
         
         return {
             'status': 'success',

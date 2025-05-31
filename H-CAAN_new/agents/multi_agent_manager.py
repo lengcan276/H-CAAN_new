@@ -10,12 +10,15 @@ from datetime import datetime
 import json
 import os
 import numpy as np
-
+import sys
 from .data_agent import DataAgent
 from .fusion_agent import FusionAgent
 from .model_agent import ModelAgent
 from .explain_agent import ExplainAgent
 from .paper_agent import PaperAgent
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# 然后可以正常导入
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +226,13 @@ class MultiAgentManager:
     def _create_modal_features_from_base(self, base_features: np.ndarray) -> List[np.ndarray]:
         """从基础特征创建六模态特征（用于演示）"""
         logger.info("从基础特征创建六模态特征")
+         # 确保是numpy数组
+        if not isinstance(base_features, np.ndarray):
+            base_features = np.array(base_features)
+        
+        # 确保是2D数组
+        if len(base_features.shape) == 1:
+            base_features = base_features.reshape(-1, 1)
         
         n_samples, n_features = base_features.shape
         modal_features = []
@@ -380,12 +390,13 @@ class MultiAgentManager:
             handler = self.task_mapping[task_name]
             result = handler(**kwargs)
             
-            # 保存结果
-            self.task_results[task_id] = result
+            # 保存结果时进行序列化转换
+            from utils.json_utils import convert_to_serializable
+            self.task_results[task_id] = convert_to_serializable(result)
             self.task_status[task_id] = 'completed'
             
             logger.info(f"任务 {task_id} 完成")
-            return result
+            return result  # 返回原始结果，不是转换后的
             
         except Exception as e:
             logger.error(f"任务 {task_id} 失败: {str(e)}")
@@ -403,13 +414,6 @@ class MultiAgentManager:
     def manage_workflow(self, workflow_name: str, input_data: Dict) -> Any:
         """
         管理工作流执行
-        
-        Args:
-            workflow_name: 工作流名称
-            input_data: 初始输入数据
-            
-        Returns:
-            工作流最终结果
         """
         logger.info(f"执行工作流: {workflow_name}")
         
@@ -435,13 +439,15 @@ class MultiAgentManager:
                 
                 # 准备任务参数
                 task_params = self._prepare_task_params(task, current_data, 
-                                                       self.task_status[workflow_id]['results'])
+                                                    self.task_status[workflow_id]['results'])
                 
                 # 执行任务
                 result = self.dispatch_task(task, **task_params)
                 
-                # 更新结果
-                self.task_status[workflow_id]['results'][task] = result             
+                # 更新结果时进行序列化转换
+                from utils.json_utils import convert_to_serializable
+                self.task_status[workflow_id]['results'][task] = convert_to_serializable(result)
+                
                 # 特别处理train_model任务
                 if task == 'train_model':
                     logger.info(f"模型训练完成，路径: {result}")

@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 import time
 import os
 import sys
+
+
+# 使用绝对导入
 from utils.model_manager import ModelManager
-
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.ui_agent import UIAgent
 
 def show_modeling_page():
@@ -26,6 +26,21 @@ def show_modeling_page():
         st.session_state.ui_agent = UIAgent()
     
     ui_agent = st.session_state.ui_agent
+    
+    # 初始化模型管理器
+    model_manager = ModelManager()
+    
+    # 自动发现已有模型
+    #model_manager.auto_discover_models()
+    
+    # 检查是否有已保存的模型（自动加载最新模型）
+    if 'model_path' not in st.session_state:
+        latest_model = model_manager.get_latest_model()
+        if latest_model:
+            st.session_state.model_path = latest_model['model_path']
+            st.session_state.model_trained = True
+            st.session_state.training_metrics = latest_model.get('metrics', {})
+            st.info(f"已自动加载最新模型: {os.path.basename(latest_model['model_path'])}")
     
     # 训练配置
     with st.expander("⚙️ 训练配置", expanded=True):
@@ -103,17 +118,20 @@ def show_modeling_page():
                 ["集成模型", "随机森林", "神经网络"]
             )
             learning_rate = st.number_input("学习率", 0.0001, 0.1, 0.001, format="%.4f")
+            st.session_state.learning_rate = learning_rate
             
         with col3:
             batch_size = st.selectbox("批次大小", [16, 32, 64, 128], index=1)
             epochs = st.number_input("训练轮数", 10, 500, 100)
             early_stopping = st.checkbox("早停策略", value=True)
+            st.session_state.batch_size = batch_size
+            st.session_state.epochs = epochs
     
     # 创建标签页
     tab1, tab2, tab3, tab4 = st.tabs(["🚀 训练", "📊 监控", "🎯 预测", "📈 评估"])
     
     with tab1:
-        show_training_tab(ui_agent)
+        show_training_tab(ui_agent, model_manager)  # 传入model_manager
     
     with tab2:
         show_monitoring_tab()
@@ -124,20 +142,116 @@ def show_modeling_page():
     with tab4:
         show_evaluation_tab()
 
-def show_training_tab(ui_agent):
+
+def show_training_tab(ui_agent, model_manager):  # 修改函数签名，接受两个参数
     """训练标签页"""
     st.subheader("模型训练")
     
-    # 初始化模型管理器
-    model_manager = ModelManager()
+    # 不需要再次初始化model_manager，因为已经作为参数传入
+    # model_manager = ModelManager()  # 删除这行
+    # model_manager.auto_discover_models()  # 删除这行，在主函数中已经调用
     
-    # 检查是否有已保存的模型
-    latest_model = model_manager.get_latest_model()
-    if latest_model and 'model_path' not in st.session_state:
-        st.session_state.model_path = latest_model['model_path']
-        st.session_state.model_trained = True
-        st.session_state.training_metrics = latest_model.get('metrics', {})
-        st.info(f"已加载之前训练的模型: {latest_model['model_path']}")
+    # 添加手动选择模型的选项
+    with st.expander("⚙️ 模型选择", expanded=True):
+        model_dir = 'data/models'
+        if os.path.exists(model_dir):
+            model_files = [f for f in os.listdir(model_dir) if f.endswith('.pkl')]
+            if model_files:
+                # 尝试从session_state获取当前模型文件名
+                current_model = None
+                if 'model_path' in st.session_state:
+                    current_model = os.path.basename(st.session_state.model_path)
+                
+                # 如果当前模型在列表中，设置为默认选项
+                if current_model in model_files:
+                    default_index = model_files.index(current_model)
+                else:
+                    default_index = 0
+                
+                selected_model = st.selectbox(
+                    "选择模型文件", 
+                    model_files,
+                    index=default_index
+                )
+                
+                if selected_model:
+                    full_path = os.path.join(model_dir, selected_model)
+                    st.session_state.model_path = full_path
+                    st.session_state.model_trained = True
+                    st.success(f"已选择模型: {selected_model}")
+    
+    # 显示已有模型列表
+    with st.expander("📦 已有模型", expanded=False):
+        models = model_manager.list_models()
+        if models:
+            # 创建模型信息DataFrame
+            model_data = []
+            for model in models:
+                model_data.append({
+                    '模型ID': model['model_id'],
+                    '任务名称': model.get('task_name', 'Unknown'),
+                    '创建时间': model.get('created_at', 'Unknown'),
+                    'R²': model.get('metrics', {}).get('r2', 0),
+                    'RMSE': model.get('metrics', {}).get('rmse', 0),
+                    '文件大小(MB)': f"{model.get('file_size_mb', 0):.2f}"
+                })
+            
+            model_df = pd.DataFrame(model_data)
+            st.dataframe(model_df, use_container_width=True)
+            
+            # 选择模型加载
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                selected_model_id = st.selectbox(
+                    "选择模型加载",
+                    options=[m['model_id'] for m in models],
+                    format_func=lambda x: f"{x} - {next(m['task_name'] for m in models if m['model_id'] == x)}"
+                )
+            
+            with col2:
+                if st.button("加载模型", use_container_width=True):
+                    model_info = next(m for m in models if m['model_id'] == selected_model_id)
+                    st.session_state.model_path = model_info['model_path']
+                    st.session_state.model_trained = True
+                    st.session_state.training_metrics = model_info.get('metrics', {})
+                    st.success(f"已加载模型: {selected_model_id}")
+                    st.rerun()
+        else:
+            st.info("暂无已训练的模型")
+            
+        # 快速加载按钮（如果存在ensemble_model_sampl.pkl）
+        if os.path.exists('data/models/ensemble_model_sampl.pkl'):
+            st.markdown("---")
+            if st.button("🔄 快速加载 ensemble_model_sampl.pkl", use_container_width=True):
+                try:
+                    import joblib
+                    model_path = 'data/models/ensemble_model_sampl.pkl'
+                    model_info = joblib.load(model_path)
+                    
+                    st.session_state.model_path = model_path
+                    st.session_state.model_trained = True
+                    
+                    if isinstance(model_info, dict):
+                        st.session_state.training_metrics = model_info.get('test_metrics', {})
+                        # 注册到模型管理器
+                        model_manager.register_model(
+                            model_path=model_path,
+                            task_name='sampl',
+                            metrics=model_info.get('test_metrics', {}),
+                            metadata={'auto_loaded': True}
+                        )
+                    else:
+                        st.session_state.training_metrics = {}
+                    
+                    st.success("✅ 模型加载成功！")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"加载模型失败: {str(e)}")
+    
+    # 删除重复的自动加载代码，因为在主函数中已经处理
+    # if 'model_path' not in st.session_state:
+    #     latest_model = model_manager.get_latest_model()
+    #     ...
     
     # 调试信息部分 - 只保留一个，并添加唯一的key
     if st.checkbox("显示调试信息", key="debug_info_training"):
@@ -151,6 +265,8 @@ def show_training_tab(ui_agent):
             "fusion_completed": st.session_state.get('fusion_completed', False)
         })
     
+    
+    # 原有的训练检查和训练按钮代码保持不变...
     col1, col2 = st.columns([3, 1])
     
     with col1:
@@ -259,13 +375,17 @@ def show_training_tab(ui_agent):
                     
                     # 保存模型信息到持久化存储
                     if result.get('model_path'):
-                        # 如果有model_manager，保存模型信息
-                        if 'model_manager' in locals() or 'model_manager' in globals():
-                            model_manager.save_model_info(
-                                task_name=st.session_state.get('current_file', 'default').split('.')[0],
-                                model_path=result.get('model_path'),
-                                metrics=result.get('metrics', {})
-                            )
+                        # 使用模型管理器保存模型信息
+                        model_manager.register_model(
+                            model_path=result.get('model_path'),
+                            task_name=st.session_state.get('current_file', 'default').split('.')[0],
+                            metrics=result.get('metrics', {}),
+                            metadata={
+                                'target_property': target_property,
+                                'train_ratio': st.session_state.get('train_ratio', 0.8),
+                                'data_file': st.session_state.get('current_file', 'unknown')
+                            }
+                        )
                         st.info(f"模型已保存至: {result.get('model_path')}")
                     
                     # 显示性能指标

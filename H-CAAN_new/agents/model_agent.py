@@ -12,47 +12,27 @@ import joblib
 import os
 from typing import Dict, Tuple, List, Optional
 import logging
-
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 logger = logging.getLogger(__name__)
 
 class EnsembleModel:
     """集成模型，结合多个基模型"""
     
-    def __init__(self):
+    def __init__(self, use_gpu=True):
         self.use_gpu = use_gpu and torch.cuda.is_available()
         
-        if self.use_gpu:
-            try:
-                import xgboost as xgb
-                # 使用支持GPU的模型
-                self.models = {
-                    'xgb': xgb.XGBRegressor(
-                        n_estimators=100, 
-                        tree_method='gpu_hist',
-                        gpu_id=0,
-                        random_state=42
-                    ),
-                    'rf': RandomForestRegressor(n_estimators=100, random_state=42),
-                    'gpr': GaussianProcessRegressor(random_state=42)
-                }
-                logger.info("使用GPU加速的XGBoost")
-            except ImportError:
-                self.use_gpu = False
-                
-        if not self.use_gpu:
-            # 原有的CPU模型
-            self.models = {
-                'rf': RandomForestRegressor(n_estimators=100, random_state=42),
-                'gbm': GradientBoostingRegressor(n_estimators=100, random_state=42),
-                'gpr': GaussianProcessRegressor(random_state=42)
-            }
+        # 完全禁用XGBoost的GPU支持，避免版本兼容问题
+        # 使用传统的集成模型
         self.models = {
             'rf': RandomForestRegressor(n_estimators=100, random_state=42),
             'gbm': GradientBoostingRegressor(n_estimators=100, random_state=42),
             'gpr': GaussianProcessRegressor(random_state=42)
         }
+        
         self.weights = None
         self.is_trained = False
+        
+        logger.info("使用CPU集成模型（RF + GBM + GPR）")
         
     def fit(self, X, y):
         """训练所有基模型"""
@@ -251,6 +231,22 @@ class ModelAgent:
         logger.info(f"模型训练完成，保存至: {model_path}")
         logger.info(f"测试集性能指标: {test_metrics}")
         
+        from utils.model_manager import ModelManager
+        model_manager = ModelManager()
+        model_manager.register_model(
+            model_path=model_path,
+            task_name=train_params.get('task_name', 'default'),
+            metrics=test_metrics,
+            metadata={
+                'train_params': train_params,
+                'data_split': split_data.get('ratios', {}),
+                'n_samples': {
+                    'train': len(X_train),
+                    'val': len(X_val),
+                    'test': len(X_test)
+                }
+            }
+        )
         return model_path
         
     def predict(self, model_path: str, fused_features: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -303,3 +299,86 @@ class ModelAgent:
         # 从随机森林模型获取特征重要性
         rf_model = self.model.models['rf']
         return rf_model.feature_importances_
+    
+
+    
+    def evaluate_modal_combination(self, modal_features: List[np.ndarray], 
+                                labels: np.ndarray,
+                                modal_indices: List[int],
+                                train_idx: np.ndarray,
+                                val_idx: np.ndarray,
+                                weights: np.ndarray = None) -> Dict:
+        """
+        评估特定模态组合的实际性能
+        
+        Args:
+            modal_features: 各模态特征列表
+            labels: 目标标签
+            modal_indices: 要使用的模态索引
+            train_idx: 训练集索引
+            val_idx: 验证集索引
+            weights: 模态权重
+            
+        Returns:
+            性能指标字典
+        """
+        # 选择指定模态的特征
+        selected_features = [modal_features[i] for i in modal_indices]
+        
+        # 如果没有提供权重，使用均匀权重
+        if weights is None:
+            weights = np.ones(len(modal_indices)) / len(modal_indices)
+        else:
+            # 确保权重归一化
+            weights = weights / weights.sum()
+        
+        # 融合特征
+        fused_train = self._weighted_fusion(
+            [feat[train_idx] for feat in selected_features], weights
+        )
+        fused_val = self._weighted_fusion(
+            [feat[val_idx] for feat in selected_features], weights
+        )
+        
+        # 使用当前的集成模型配置训练
+        temp_model = EnsembleModel()
+        temp_model.fit(fused_train, labels[train_idx])
+        
+        # 在验证集上评估
+        predictions = temp_model.predict(fused_val)
+        
+        # 计算各种指标
+        return {
+            'rmse': np.sqrt(mean_squared_error(labels[val_idx], predictions)),
+            'mae': mean_absolute_error(labels[val_idx], predictions),
+            'r2': r2_score(labels[val_idx], predictions),
+            'correlation': np.corrcoef(labels[val_idx], predictions)[0, 1]
+        }
+
+    def _weighted_fusion(self, features: List[np.ndarray], weights: np.ndarray) -> np.ndarray:
+        """加权融合特征"""
+        # 确保所有特征具有相同的样本数
+        n_samples = features[0].shape[0]
+        
+        # 获取最大特征维度
+        max_dim = max(f.shape[1] if len(f.shape) > 1 else 1 for f in features)
+        
+        # 初始化融合特征
+        fused = np.zeros((n_samples, max_dim))
+        
+        # 加权融合
+        for i, (feat, weight) in enumerate(zip(features, weights)):
+            # 处理维度不匹配
+            if len(feat.shape) == 1:
+                feat = feat.reshape(-1, 1)
+            
+            if feat.shape[1] < max_dim:
+                # 填充
+                feat = np.pad(feat, ((0, 0), (0, max_dim - feat.shape[1])), 'constant')
+            elif feat.shape[1] > max_dim:
+                # 截断
+                feat = feat[:, :max_dim]
+            
+            fused += weight * feat
+        
+        return fused

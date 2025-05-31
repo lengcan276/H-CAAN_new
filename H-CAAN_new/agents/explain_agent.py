@@ -11,9 +11,23 @@ from typing import Dict, List, Optional
 import json
 import os
 import logging
+from utils.data_utils import make_json_serializable
+from utils.json_utils import safe_json_dump, convert_to_serializable
 
 logger = logging.getLogger(__name__)
-
+def ensure_numpy_array(data):
+    """确保数据是numpy数组格式"""
+    if data is None:
+        return None
+    if isinstance(data, list):
+        return np.array(data)
+    if isinstance(data, np.ndarray):
+        return data
+    # 对于其他类型，尝试转换
+    try:
+        return np.array(data)
+    except:
+        raise ValueError(f"无法将{type(data)}转换为numpy数组")
 class ExplainAgent:
     """模型解释智能体"""
     
@@ -48,7 +62,7 @@ class ExplainAgent:
 """
         
     def generate_explanations(self, model_path: str, fused_features: np.ndarray, 
-                            predictions: Optional[np.ndarray] = None) -> Dict:
+                        predictions: Optional[np.ndarray] = None) -> Dict:
         """
         生成模型解释报告
         
@@ -61,6 +75,13 @@ class ExplainAgent:
             包含可视化数据和解释文本的字典
         """
         logger.info("开始生成模型解释...")
+        
+        # 确保输入是numpy数组
+        if isinstance(fused_features, list):
+            fused_features = np.array(fused_features)
+        
+        if predictions is not None and isinstance(predictions, list):
+            predictions = np.array(predictions)
         
         explanation_report = {
             'feature_importance': self._analyze_feature_importance(model_path, fused_features),
@@ -86,11 +107,15 @@ class ExplainAgent:
         """分析特征重要性"""
         import joblib
         
+        # 确保features是numpy数组
+        if isinstance(features, list):
+            features = np.array(features)
+        
         # 加载模型
         model = joblib.load(model_path)
         
         # 获取特征重要性（这里使用模拟数据，实际应从模型获取）
-        n_features = features.shape[1]
+        n_features = features.shape[1] if len(features.shape) > 1 else features.shape[0]
         importance_scores = np.random.rand(n_features)
         importance_scores = importance_scores / importance_scores.sum()
         
@@ -135,6 +160,13 @@ class ExplainAgent:
         
     def _analyze_cases(self, features: np.ndarray, predictions: Optional[np.ndarray]) -> List[Dict]:
         """分析具体案例"""
+        # 确保输入是numpy数组
+        if isinstance(features, list):
+            features = np.array(features)
+        
+        if predictions is not None and isinstance(predictions, list):
+            predictions = np.array(predictions)
+        
         case_studies = []
         
         # 选择典型案例
@@ -265,20 +297,24 @@ class ExplainAgent:
         report_dir = 'data/reports'
         os.makedirs(report_dir, exist_ok=True)
         
-        # 保存JSON格式
         timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
         json_path = os.path.join(report_dir, f'explanation_report_{timestamp}.json')
         
-        # 过滤掉不能序列化的内容
-        json_report = {k: v for k, v in report.items() 
-                      if k not in ['visualizations'] or isinstance(v, (str, int, float, list, dict))}
+        # 转换报告为可序列化格式
+        json_report = convert_to_serializable(report)
         
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(json_report, f, ensure_ascii=False, indent=2)
-            
+        # 移除可能有问题的字段
+        json_report.pop('visualizations', None)
+        
+        try:
+            with open(json_path, 'w', encoding='utf-8') as f:
+                safe_json_dump(json_report, f, ensure_ascii=False, indent=2)
+            logger.info(f"JSON报告已保存至: {json_path}")
+        except Exception as e:
+            logger.error(f"保存JSON报告失败: {str(e)}")
+        
         # 保存文本报告
         text_path = os.path.join(report_dir, f'explanation_report_{timestamp}.md')
         with open(text_path, 'w', encoding='utf-8') as f:
-            f.write(report['text_report'])
-            
-        logger.info(f"报告已保存至: {json_path} 和 {text_path}")
+            f.write(report.get('text_report', ''))
+        logger.info(f"文本报告已保存至: {text_path}")

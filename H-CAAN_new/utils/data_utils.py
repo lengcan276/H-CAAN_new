@@ -10,6 +10,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def make_json_serializable(obj):
+    """
+    递归地将对象转换为JSON可序列化的格式
+    主要处理numpy数组和其他特殊类型
+    """
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    elif isinstance(obj, (np.float32, np.float64)):
+        return float(obj)
+    elif isinstance(obj, (np.int32, np.int64)):
+        return int(obj)
+    elif isinstance(obj, dict):
+        return {key: make_json_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [make_json_serializable(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(make_json_serializable(item) for item in obj)
+    elif hasattr(obj, '__dict__'):
+        # 对于自定义对象，尝试转换其__dict__
+        return make_json_serializable(obj.__dict__)
+    else:
+        return obj
 def validate_smiles(smiles: str) -> bool:
     """验证SMILES字符串是否有效"""
     try:
